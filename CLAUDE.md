@@ -37,21 +37,25 @@ There is no module system. Everything is global within the script tag.
 
 ## State management
 
-A single global `state` object:
+A single global `state` object. The workbook is **multi-tab**: `state.groups[]` holds one record per tab, and `state.common` / `state.datasets` are **live aliases** into the active group so render functions never had to change:
 
 ```js
 const state = {
-  common:   { partName, inspectionItem, figureDetail, accuracy },
-  datasets: [ /* 2–8 dataset objects */ ],
-  ui:       { /* all UI prefs: language, chart sizes, toggles, drag positions, slash params */ }
+  groups:      [ { id, name, common:{…}, datasets:[…], spacing } ],
+  activeGroup: 0,
+  common:      // ALIAS → groups[activeGroup].common
+  datasets:    // ALIAS → groups[activeGroup].datasets  (2–8 dataset objects)
+  ui:          { /* global UI prefs: language, chart sizes, toggles, drag positions, slash params */ }
 };
 ```
 
-Each `dataset` has: `id, name, mc, date, checker, tool, condition, upper, lower, data[30], color, marker, cpkOffset`
+`setActiveGroup(i)` re-points the aliases, refreshes the common inputs, and re-renders. Mutate `state.datasets` **in place** (`.push`/`.splice`) or it desyncs from the group; if you must replace the array, assign `activeGroup().datasets` then `setActiveGroup`. `spacing` is **per-group** (moved out of `ui`), read via `activeGroup().spacing`.
 
-**Persistence:** `state` is auto-saved to `localStorage` under `STORAGE_KEY = 'cpk-tool-state-v2'` after every change.
-**To invalidate cached state on schema changes:** bump the version suffix (e.g. `v2` → `v3`).
-**Merging:** `loadState()` uses key-by-key merge (saved state fills only existing keys in defaults) — this is intentional, do not switch back to `Object.assign(state.ui, savedUi)` because that lets stale `undefined` from old caches override new defaults.
+Each `dataset` has: `id, name, mc, date, checker, tool, condition, upper, lower, data[30], color, marker, cpkOffset`. `upper`/`lower` may be `NaN` (one-sided spec).
+
+**Persistence — local Excel file (File System Access API, Chrome/Edge only):** there is no more `localStorage`. On boot the user opens an existing `.xlsx` or creates a template (`pickOpenFile` / `createTemplateFile`). The linked `FileSystemFileHandle` is held in `fileHandle`. `saveState()` now just calls `markDirty()` → debounced (1.5s) `writeWorkbook()`; there is also an explicit Save button. A saved/unsaved chip (`#saveStatus`) reflects state.
+**Workbook format (hybrid):** one human-readable sheet per group in FM8.3.2-PE-17 layout (`buildWorkbook` ↔ `parseSheetToGroup`, kept in sync via `ROW_*` consts), plus a hidden `__CPK_STATE__` sheet with the full JSON state (colors, markers, drag positions, UI prefs). On read, `__CPK_STATE__` is preferred; otherwise the readable sheets are parsed (data-only fallback).
+**Merging:** restoring `ui` from `__CPK_STATE__` uses key-by-key merge (saved fills only existing keys) — do not switch to `Object.assign(state.ui, savedUi)` because that lets stale `undefined` override new defaults.
 
 ## Architecture patterns
 
@@ -191,7 +195,7 @@ Delete the backup after verification.
 
 4. **`pointerLeave` on individual handles** breaks drag if pointer briefly leaves the element. Use `setPointerCapture` on the SVG and don't bind `pointerleave`.
 
-5. **Storage key version** — when changing the schema of saved state in a way that's incompatible with older saved data, bump `STORAGE_KEY = 'cpk-tool-state-vN'` to N+1.
+5. **Workbook state schema** — state now persists inside the linked `.xlsx` (hidden `__CPK_STATE__` sheet), not `localStorage`. When changing the saved schema, keep `readWorkbookIntoState` tolerant (normalize via `normalizeGroup` / `Object.assign(newDataset(i), d)`) so older saved files still open. Keep `buildWorkbook` and `parseSheetToGroup` row layout in sync via the `ROW_*` constants.
 
 6. **Excel column inclusion** — `handleExcel()` only includes a column if it has at least one actual data value. Don't fall back to "include if upper/lower exist" because old templates have cached `0` values from formulas.
 

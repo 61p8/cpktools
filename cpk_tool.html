@@ -957,6 +957,56 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
 }
 @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+/* ===== Save status chip ===== */
+.save-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 4px 10px; border-radius: 20px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.save-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.save-status.saved   { color: #15803D; background: rgba(21,128,61,0.12); }
+.save-status.unsaved { color: #B45309; background: rgba(180,83,9,0.14); }
+.save-status.nofile  { color: #64748B; background: rgba(100,116,139,0.12); }
+
+/* ===== Group tab bar ===== */
+.tab-bar-wrap {
+  max-width: 1280px; margin: 0 auto; padding: 10px 24px 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.tab-bar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px 6px 12px; border-radius: 8px 8px 0 0;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+  border-bottom: none; cursor: pointer; font-size: 12px; font-weight: 500;
+  color: var(--text-dim); transition: background 0.15s, color 0.15s;
+  max-width: 200px;
+}
+.tab:hover { background: rgba(255,255,255,0.09); color: var(--text); }
+.tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-close {
+  border: none; background: transparent; color: inherit; cursor: pointer;
+  font-size: 15px; line-height: 1; padding: 0 2px; opacity: 0.6; border-radius: 4px;
+}
+.tab-close:hover { opacity: 1; background: rgba(0,0,0,0.18); }
+.tab-add {
+  border: 1px dashed var(--border); background: transparent; color: var(--text-dim);
+  cursor: pointer; font-size: 16px; line-height: 1; padding: 5px 10px; border-radius: 8px;
+}
+.tab-add:hover { color: var(--accent); border-color: var(--accent); }
+.group-select {
+  margin-left: auto; background: var(--panel, #1a1a1a); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px;
+  font-size: 12px; font-family: inherit;
+}
+@media (max-width: 600px) { .group-select { display: none; } }
+
+/* ===== Link-file modal actions ===== */
+.link-actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.link-actions .btn { flex: 1; justify-content: center; padding: 12px; }
+
 /* ===== Print ===== */
 @media print {
   body {
@@ -964,7 +1014,7 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
     background-image: none;
     padding: 0;
   }
-  .topbar, .modal-backdrop, .toast, .paste-hint, .chart-toolbar, .ds-style-row, .ds-controls, .section-actions { display: none !important; }
+  .topbar, .tab-bar-wrap, .modal-backdrop, .toast, .paste-hint, .chart-toolbar, .ds-style-row, .ds-controls, .section-actions { display: none !important; }
   .container { margin: 0; padding: 8mm; max-width: 100%; gap: 6mm; }
   .section, .chart-card { break-inside: avoid; box-shadow: none; }
   .charts-row { gap: 8mm; }
@@ -1004,11 +1054,20 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
       </div>
     </div>
     <div class="topbar-actions">
+      <span class="save-status nofile" id="saveStatus" title="File link status"></span>
       <div class="lang-switcher">
         <button class="lang-btn" data-lang="en">EN</button>
         <button class="lang-btn" data-lang="th">TH</button>
         <button class="lang-btn" data-lang="ja">JP</button>
       </div>
+      <button class="btn" id="openFileBtn" title="Open another .xlsx">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span data-i18n="btnOpenFile">Open .xlsx</span>
+      </button>
+      <button class="btn btn-primary" id="saveFileBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span data-i18n="btnSaveFile">Save</span>
+      </button>
       <button class="btn" id="importExcelBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
         <span data-i18n="btnExcel">Excel</span>
@@ -1019,14 +1078,20 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
       </button>
       <button class="btn" id="exportJsonBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        <span data-i18n="btnSave">Save</span>
+        <span data-i18n="btnExportJson">JSON</span>
       </button>
-      <button class="btn btn-primary" id="printBtn">
+      <button class="btn" id="printBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         <span data-i18n="btnPrint">Print</span>
       </button>
     </div>
   </div>
+</div>
+
+<!-- Group tab bar (each tab = one Cpk record / Excel sheet) -->
+<div class="tab-bar-wrap">
+  <div class="tab-bar" id="tabBar"></div>
+  <select class="group-select" id="groupSelect" aria-label="Select group"></select>
 </div>
 
 <div class="container">
@@ -1351,6 +1416,40 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
 </div>
 
 <!-- ===== Excel Modal ===== -->
+<!-- ===== Browser Gate (Chrome/Edge required) ===== -->
+<div class="modal-backdrop modal-locked" id="browserGate">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><span style="color:var(--accent)">⚠</span><span data-i18n="gateTitle">Chrome or Edge required</span></div>
+    </div>
+    <div class="modal-body">
+      <div class="notice" data-i18n="gateBody">This tool saves your data directly to a local Excel file using the File System Access API, which only works in Chrome or Microsoft Edge.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Link Data File (open existing / create template) ===== -->
+<div class="modal-backdrop modal-locked" id="linkFileModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><span style="color:var(--accent)">▦</span><span data-i18n="linkTitle">Link your data file</span></div>
+    </div>
+    <div class="modal-body">
+      <div class="notice" data-i18n="linkBody">Open an existing .xlsx workbook, or create a new template to start recording.</div>
+      <div class="link-actions">
+        <button class="btn" id="openFileBtn2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span data-i18n="btnOpenFile">Open .xlsx</span>
+        </button>
+        <button class="btn btn-primary" id="createTemplateBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          <span data-i18n="btnCreateTemplate">Create new template</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="excelModal">
   <div class="modal">
     <div class="modal-header">
@@ -1423,7 +1522,7 @@ document.getElementById('versionStr').textContent = APP_VERSION;
 const I18N = {
   en: {
     topbarTitle: 'Process Capability Record',
-    btnExcel: 'Excel', btnImage: 'Image', btnSave: 'Save', btnPrint: 'Print',
+    btnExcel: 'Excel', btnImage: 'Image', btnSave: 'Save', btnPrint: 'Print', btnExportJson: 'JSON',
     secCommon: 'Common Information',
     secPerDataset: 'Per-Dataset Information & Spec Limits',
     secMeasurement: 'Measurement Data',
@@ -1456,7 +1555,9 @@ const I18N = {
     statCp: 'T / 6σ',
     statCpkU: '(USL−X̄)/3σ',
     statCpkL: '(X̄−LSL)/3σ',
-    statCpkMin: 'MIN(upper, lower)',
+    statCPU: '(USL−X̄)/3σ',
+    statCPL: '(X̄−LSL)/3σ',
+    statCpkMin: 'MIN(CPU, CPL)',
     statMax: 'data max',
     statMin: 'data min',
     badgeExcellent: 'Excellent', badgeCapable: 'Capable',
@@ -1492,10 +1593,28 @@ const I18N = {
     toastSaved: 'Saved JSON file',
     toastSettingsRestored: 'Settings restored',
     noNums: 'No numbers found',
+    gateTitle: 'Chrome or Edge required',
+    gateBody: 'This tool now saves your data directly to a local Excel file using the File System Access API, which only works in Chrome or Microsoft Edge. Please reopen this file in Chrome or Edge.',
+    linkTitle: 'Link your data file',
+    linkBody: 'Open an existing .xlsx workbook, or create a new template to start recording. Your data is saved straight back into this file.',
+    btnOpenFile: 'Open .xlsx',
+    btnCreateTemplate: 'Create new template',
+    btnSaveFile: 'Save',
+    statusSaved: 'Saved',
+    statusUnsaved: 'Unsaved',
+    statusNoFile: 'No file',
+    tabAdd: 'Add group',
+    tabRenamePrompt: 'Group name:',
+    confirmRemoveTab: 'Remove this group (tab)?',
+    toastFileLinked: 'Data file linked',
+    toastFileSaved: 'Saved to Excel',
+    toastSaveFail: 'Auto-save blocked — click Save to grant access',
+    statCPU: '(USL−X̄)/3σ',
+    statCPL: '(X̄−LSL)/3σ',
   },
   th: {
     topbarTitle: 'บันทึกค่าความสามารถของกระบวนการ',
-    btnExcel: 'Excel', btnImage: 'รูปภาพ', btnSave: 'บันทึก', btnPrint: 'พิมพ์',
+    btnExcel: 'Excel', btnImage: 'รูปภาพ', btnSave: 'บันทึก', btnPrint: 'พิมพ์', btnExportJson: 'JSON',
     secCommon: 'ข้อมูลทั่วไป',
     secPerDataset: 'ข้อมูลแต่ละชุด & ขีดจำกัด',
     secMeasurement: 'ค่าที่วัดได้',
@@ -1528,7 +1647,9 @@ const I18N = {
     statCp: 'T / 6σ',
     statCpkU: '(USL−X̄)/3σ',
     statCpkL: '(X̄−LSL)/3σ',
-    statCpkMin: 'MIN(บน, ล่าง)',
+    statCPU: '(USL−X̄)/3σ',
+    statCPL: '(X̄−LSL)/3σ',
+    statCpkMin: 'MIN(CPU, CPL)',
     statMax: 'ค่าสูงสุด',
     statMin: 'ค่าต่ำสุด',
     badgeExcellent: 'ดีเยี่ยม', badgeCapable: 'ผ่าน',
@@ -1564,10 +1685,28 @@ const I18N = {
     toastSaved: 'บันทึกไฟล์ JSON แล้ว',
     toastSettingsRestored: 'กู้คืนการตั้งค่าแล้ว',
     noNums: 'ไม่พบตัวเลข',
+    gateTitle: 'ต้องใช้ Chrome หรือ Edge',
+    gateBody: 'เครื่องมือนี้บันทึกข้อมูลลงไฟล์ Excel บนเครื่องโดยตรงผ่าน File System Access API ซึ่งใช้ได้เฉพาะ Chrome หรือ Microsoft Edge กรุณาเปิดไฟล์นี้ใหม่ด้วย Chrome หรือ Edge',
+    linkTitle: 'ลิงก์ไฟล์ข้อมูลของคุณ',
+    linkBody: 'เปิดไฟล์ .xlsx ที่มีอยู่ หรือสร้างเทมเพลตใหม่เพื่อเริ่มบันทึก ข้อมูลจะถูกเซฟกลับลงไฟล์นี้โดยตรง',
+    btnOpenFile: 'เปิด .xlsx',
+    btnCreateTemplate: 'สร้างเทมเพลตใหม่',
+    btnSaveFile: 'บันทึก',
+    statusSaved: 'บันทึกแล้ว',
+    statusUnsaved: 'ยังไม่บันทึก',
+    statusNoFile: 'ยังไม่มีไฟล์',
+    tabAdd: 'เพิ่มกลุ่ม',
+    tabRenamePrompt: 'ชื่อกลุ่ม:',
+    confirmRemoveTab: 'ลบกลุ่ม (tab) นี้?',
+    toastFileLinked: 'ลิงก์ไฟล์ข้อมูลแล้ว',
+    toastFileSaved: 'บันทึกลง Excel แล้ว',
+    toastSaveFail: 'ออโต้เซฟถูกบล็อก — กดบันทึกเพื่อให้สิทธิ์',
+    statCPU: '(USL−X̄)/3σ',
+    statCPL: '(X̄−LSL)/3σ',
   },
   ja: {
     topbarTitle: '工程能力記録',
-    btnExcel: 'Excel', btnImage: '画像', btnSave: '保存', btnPrint: '印刷',
+    btnExcel: 'Excel', btnImage: '画像', btnSave: '保存', btnPrint: '印刷', btnExportJson: 'JSON',
     secCommon: '共通情報',
     secPerDataset: 'データセット情報・規格値',
     secMeasurement: '測定データ',
@@ -1600,7 +1739,9 @@ const I18N = {
     statCp: 'T / 6σ',
     statCpkU: '(USL−X̄)/3σ',
     statCpkL: '(X̄−LSL)/3σ',
-    statCpkMin: 'MIN(上, 下)',
+    statCPU: '(USL−X̄)/3σ',
+    statCPL: '(X̄−LSL)/3σ',
+    statCpkMin: 'MIN(CPU, CPL)',
     statMax: '最大値',
     statMin: '最小値',
     badgeExcellent: '優秀', badgeCapable: '合格',
@@ -1636,6 +1777,24 @@ const I18N = {
     toastSaved: 'JSONファイルを保存',
     toastSettingsRestored: '設定を復元',
     noNums: '数値が見つかりません',
+    gateTitle: 'Chrome または Edge が必要です',
+    gateBody: 'このツールは File System Access API を使ってローカルの Excel ファイルに直接保存します。これは Chrome または Microsoft Edge でのみ動作します。Chrome / Edge でこのファイルを開き直してください。',
+    linkTitle: 'データファイルをリンク',
+    linkBody: '既存の .xlsx を開くか、新しいテンプレートを作成して記録を開始します。データはこのファイルに直接保存されます。',
+    btnOpenFile: '.xlsx を開く',
+    btnCreateTemplate: '新規テンプレート作成',
+    btnSaveFile: '保存',
+    statusSaved: '保存済み',
+    statusUnsaved: '未保存',
+    statusNoFile: 'ファイルなし',
+    tabAdd: 'グループ追加',
+    tabRenamePrompt: 'グループ名:',
+    confirmRemoveTab: 'このグループ (タブ) を削除しますか？',
+    toastFileLinked: 'データファイルをリンクしました',
+    toastFileSaved: 'Excel に保存しました',
+    toastSaveFail: '自動保存がブロックされました — 保存をクリックして許可してください',
+    statCPU: '(USL−X̄)/3σ',
+    statCPL: '(X̄−LSL)/3σ',
   }
 };
 
@@ -1651,12 +1810,15 @@ function applyLang() {
   document.querySelectorAll('.lang-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.lang === LANG);
   });
-  // Re-render dynamic tables (their headers depend on lang)
-  renderDsTable();
-  renderStats();
-  drawCapChart();
-  drawRunChart();
-  drawBellChart();
+  if (typeof updateSaveIndicator === 'function') updateSaveIndicator();
+  // Re-render dynamic tables (their headers depend on lang) — only once a group is loaded
+  if (state.groups.length && state.datasets.length) {
+    renderDsTable();
+    renderStats();
+    drawCapChart();
+    drawRunChart();
+    drawBellChart();
+  }
 }
 
 /* ============================================================
@@ -1679,7 +1841,21 @@ function newDataset(idx) {
   };
 }
 
+function newGroup(idx, name) {
+  return {
+    id: 'grp-' + Date.now() + '-' + idx,
+    name: name || ('Group ' + (idx + 1)),
+    common: { partName: '', inspectionItem: '', figureDetail: '', accuracy: '' },
+    datasets: [newDataset(0), newDataset(1)],
+    spacing: null              // relative positions [0..1] per dataset, null = auto-distribute (per-group)
+  };
+}
+
 const state = {
+  // Multi-tab workbook: each group = one Cpk record (1 Excel sheet)
+  groups: [],
+  activeGroup: 0,
+  // Live aliases into the active group (so render functions stay unchanged)
   common: { partName: '', inspectionItem: '', figureDetail: '', accuracy: '' },
   datasets: [],
   ui: {
@@ -1688,7 +1864,6 @@ const state = {
     capFont: 11,               // 8..18
     capDecimals: 3,            // 0..4
     showMax: true, showAvg: true, showMin: true,
-    spacing: null,             // array of relative positions [0..1] per dataset, or null = auto-distribute
     // Resizable canvases
     capWidth: 600, capHeight: 480,
     runWidth: 600, runHeight: 520,
@@ -1719,46 +1894,266 @@ const state = {
   }
 };
 
-// Boot with 2 datasets
+// Active-group helpers — keep state.common / state.datasets pointing at the active group
+function activeGroup() { return state.groups[state.activeGroup]; }
+function setActiveGroup(i, opts = {}) {
+  if (!state.groups.length) return;
+  state.activeGroup = Math.max(0, Math.min(i, state.groups.length - 1));
+  const g = state.groups[state.activeGroup];
+  state.common = g.common;
+  state.datasets = g.datasets;
+  // Reflect this group's common info into the input fields
+  ['partName', 'inspectionItem', 'figureDetail', 'accuracy'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = state.common[id] || '';
+  });
+  if (!opts.skipRender) { renderAll(); renderTabBar(); }   // switching view does not dirty the file
+}
+
+// Boot with two example groups (also used by "Create new template")
 function bootDefaults() {
-  state.datasets = [newDataset(0), newDataset(1)];
-  // Demo data from the original FM8.3.2-PE-17
-  state.datasets[0].name = 'Current/DNJP';
-  state.datasets[0].data = [2, 2, 2, 3, 4, 2, 2, 5, 5, 5, ...Array(20).fill(null)];
-  state.datasets[1].name = 'New/DNTH';
-  state.datasets[1].data = [2, 3, 4, 5, 5, 4, 3, 1.8, 2, 1.8, ...Array(20).fill(null)];
+  const g0 = newGroup(0, 'Example A');
+  g0.datasets[0].name = 'Current/DNJP';
+  g0.datasets[0].data = [2, 2, 2, 3, 4, 2, 2, 5, 5, 5, ...Array(20).fill(null)];
+  g0.datasets[1].name = 'New/DNTH';
+  g0.datasets[1].data = [2, 3, 4, 5, 5, 4, 3, 1.8, 2, 1.8, ...Array(20).fill(null)];
+  const g1 = newGroup(1, 'Example B');
+  state.groups = [g0, g1];
+  setActiveGroup(0, { skipRender: true });
 }
 
 /* ============================================================
-   PERSISTENCE (localStorage with try/catch)
+   PERSISTENCE — local Excel file (File System Access API)
+   The workbook holds one readable sheet per group (FM8.3.2-PE-17
+   layout) plus a hidden __CPK_STATE__ sheet with full JSON state.
    ============================================================ */
-function saveState() {
-  try {
-    const minimal = {
-      v: APP_VERSION,
-      common: state.common,
-      datasets: state.datasets,
-      ui: state.ui
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(minimal));
-  } catch (e) { /* silently ignore (artifact env) */ }
+const STATE_SHEET = '__CPK_STATE__';
+// Shared row layout (1-based) — keep writer & reader in sync
+const ROW_PART = 4, ROW_INSP = 6, ROW_USL = 8, ROW_LSL = 9, ROW_NAME = 11, ROW_ITEMLABEL = 12, ROW_DATA = 13;
+const colLetter = c => String.fromCharCode(67 + c); // 0->C, 1->D ... 7->J
+
+let fileHandle = null;     // FileSystemFileHandle of the linked .xlsx
+let dirty = false;
+let autosaveTimer = null;
+let isWriting = false;
+
+function fsApiSupported() { return typeof window.showOpenFilePicker === 'function'; }
+
+// saveState() is called from ~25 places. Re-point it to the Excel autosave.
+function saveState() { markDirty(); }
+
+function markDirty() { dirty = true; updateSaveIndicator(); scheduleAutosave(); }
+function markClean() { dirty = false; updateSaveIndicator(); }
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => { if (dirty) writeWorkbook(); }, 1500);
 }
-function loadState() {
+function updateSaveIndicator() {
+  const el = document.getElementById('saveStatus');
+  if (!el) return;
+  if (!fileHandle) { el.textContent = t('statusNoFile'); el.className = 'save-status nofile'; return; }
+  el.textContent = dirty ? t('statusUnsaved') : t('statusSaved');
+  el.className = 'save-status ' + (dirty ? 'unsaved' : 'saved');
+}
+
+async function ensureWritePermission() {
+  if (!fileHandle) return false;
+  const opts = { mode: 'readwrite' };
+  if ((await fileHandle.queryPermission(opts)) === 'granted') return true;
+  return (await fileHandle.requestPermission(opts)) === 'granted';
+}
+
+async function writeWorkbook() {
+  if (!fileHandle) return;
+  if (isWriting) { scheduleAutosave(); return; }   // re-try after current write
+  isWriting = true;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
-    const obj = JSON.parse(raw);
-    if (!obj || !Array.isArray(obj.datasets) || obj.datasets.length < MIN_DATASETS) return false;
-    state.common = Object.assign({}, state.common, obj.common || {});
-    state.datasets = obj.datasets.map((d, i) => Object.assign(newDataset(i), d));
-    // Merge: saved state first, then defaults fill in missing fields, with explicit fallback for known fields
-    const savedUi = obj.ui || {};
-    Object.keys(state.ui).forEach(k => {
-      if (savedUi[k] !== undefined) state.ui[k] = savedUi[k];
+    if (!(await ensureWritePermission())) throw new DOMException('permission', 'NotAllowedError');
+    const wb = buildWorkbook();
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const w = await fileHandle.createWritable();
+    await w.write(new Blob([out]));
+    await w.close();
+    markClean();
+  } catch (err) {
+    dirty = true;
+    updateSaveIndicator();
+    if (err && err.name === 'NotAllowedError') showToast(t('toastSaveFail'));
+    else { console.error(err); showToast(t('toastSaveFail')); }
+  } finally {
+    isWriting = false;
+  }
+}
+
+function sanitizeSheetName(name, used) {
+  let n = String(name || 'Group').replace(/[:\\\/?*\[\]]/g, ' ').trim().slice(0, 28) || 'Group';
+  let base = n, k = 2;
+  while (used.has(n)) { n = (base + ' ' + k).slice(0, 31); k++; }
+  used.add(n);
+  return n;
+}
+
+function buildWorkbook() {
+  const wb = XLSX.utils.book_new();
+  const used = new Set();
+  state.groups.forEach(g => {
+    const N = ROW_DATA + MAX_ROWS;       // total rows incl. header
+    const aoa = Array.from({ length: N }, () => []);
+    aoa[ROW_PART - 1][0] = 'Part Name / No.';
+    aoa[ROW_PART - 1][1] = g.common.partName || '';
+    aoa[ROW_INSP - 1][0] = 'Inspection Item';
+    aoa[ROW_INSP - 1][1] = g.common.inspectionItem || '';
+    aoa[ROW_USL - 1][0] = 'Upper Level (USL)';
+    aoa[ROW_LSL - 1][0] = 'Lower Level (LSL)';
+    aoa[ROW_ITEMLABEL - 1][0] = 'Item Data';
+    g.datasets.forEach((d, c) => {
+      if (c >= MAX_DATASETS) return;
+      const col = c + 2;                 // column C = index 2
+      aoa[ROW_NAME - 1][col] = d.name || '';
+      if (typeof d.upper === 'number' && !isNaN(d.upper)) aoa[ROW_USL - 1][col] = d.upper;
+      if (typeof d.lower === 'number' && !isNaN(d.lower)) aoa[ROW_LSL - 1][col] = d.lower;
+      for (let i = 0; i < MAX_ROWS; i++) {
+        const v = d.data[i];
+        if (typeof v === 'number' && !isNaN(v)) aoa[ROW_DATA - 1 + i][col] = v;
+      }
     });
-    LANG = state.ui.lang || 'en';
-    return true;
-  } catch (e) { return false; }
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(g.name, used));
+  });
+  // Hidden full-state sheet
+  const json = JSON.stringify({ v: APP_VERSION, groups: state.groups, activeGroup: state.activeGroup, ui: state.ui });
+  const ws2 = XLSX.utils.aoa_to_sheet([[json]]);
+  XLSX.utils.book_append_sheet(wb, ws2, STATE_SHEET);
+  if (wb.Workbook && Array.isArray(wb.Workbook.Sheets)) {
+    const idx = wb.SheetNames.indexOf(STATE_SHEET);
+    wb.Workbook.Sheets[idx] = { Hidden: 1 };
+  } else {
+    wb.Workbook = { Sheets: wb.SheetNames.map(n => (n === STATE_SHEET ? { Hidden: 1 } : {})) };
+  }
+  return wb;
+}
+
+function normalizeGroup(g, idx) {
+  const ng = newGroup(idx, (g && g.name) || ('Group ' + (idx + 1)));
+  if (g && g.id) ng.id = g.id;
+  ng.common = Object.assign({ partName: '', inspectionItem: '', figureDetail: '', accuracy: '' }, g && g.common);
+  if (g && Array.isArray(g.datasets) && g.datasets.length) {
+    ng.datasets = g.datasets.map((d, i) => Object.assign(newDataset(i), d));
+  }
+  if (g && g.spacing !== undefined) ng.spacing = g.spacing;
+  return ng;
+}
+
+// Parse one readable sheet (FM8.3.2 layout) → group object (data-only fallback)
+function parseSheetToGroup(ws, sheetName) {
+  const get = cell => ws[cell] ? ws[cell].v : null;
+  let upper = [], lower = [];
+  for (let c = 0; c < 8; c++) { upper[c] = get(colLetter(c) + ROW_USL); lower[c] = get(colLetter(c) + ROW_LSL); }
+  if (typeof upper[0] !== 'number' && typeof lower[0] !== 'number') {
+    for (let row = 1; row <= 50; row++) {
+      const lbl = (String(get('A' + row) || '') + ' ' + String(get('B' + row) || '')).toLowerCase();
+      if (lbl.includes('upper level') || lbl.includes('usl')) for (let c = 0; c < 8; c++) upper[c] = get(colLetter(c) + row);
+      if (lbl.includes('lower level') || lbl.includes('lsl')) for (let c = 0; c < 8; c++) lower[c] = get(colLetter(c) + row);
+    }
+  }
+  let dataStart = ROW_DATA;
+  for (let row = 1; row <= 50; row++) {
+    if (String(get('A' + row) || '').toLowerCase().includes('item data')) { dataStart = row + 1; break; }
+  }
+  const cols = [];
+  for (let c = 0; c < 8; c++) {
+    const letter = colLetter(c);
+    const data = []; let any = false;
+    for (let i = 0; i < MAX_ROWS; i++) {
+      const v = get(letter + (dataStart + i));
+      if (typeof v === 'number') { data.push(v); any = true; } else data.push(null);
+    }
+    if (any || typeof upper[c] === 'number' || typeof lower[c] === 'number') {
+      if (any) cols.push({ c, data, upper: upper[c], lower: lower[c] });
+    }
+  }
+  if (cols.length === 0) return null;
+  const datasets = cols.slice(0, MAX_DATASETS).map((col, i) => {
+    const base = newDataset(i);
+    base.upper = (typeof col.upper === 'number') ? col.upper : NaN;
+    base.lower = (typeof col.lower === 'number') ? col.lower : NaN;
+    base.data = [...col.data, ...Array(MAX_ROWS - col.data.length).fill(null)];
+    const nameCand = get(colLetter(col.c) + (dataStart - 2)) || get(colLetter(col.c) + (dataStart - 1));
+    if (nameCand && typeof nameCand === 'string' && nameCand.length < 40) base.name = nameCand;
+    return base;
+  });
+  while (datasets.length < MIN_DATASETS) datasets.push(newDataset(datasets.length));
+  const common = {
+    partName: String(get('B' + ROW_PART) || get('C' + ROW_PART) || ''),
+    inspectionItem: String(get('B' + ROW_INSP) || get('C' + ROW_INSP) || ''),
+    figureDetail: '', accuracy: ''
+  };
+  const g = newGroup(0, sheetName || 'Group');
+  g.common = common; g.datasets = datasets;
+  return g;
+}
+
+async function readWorkbookIntoState(handle) {
+  const file = await handle.getFile();
+  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  // Prefer the full-state sheet
+  if (wb.SheetNames.includes(STATE_SHEET)) {
+    const cell = wb.Sheets[STATE_SHEET]['A1'];
+    if (cell && cell.v) {
+      try {
+        const obj = JSON.parse(cell.v);
+        if (obj && Array.isArray(obj.groups) && obj.groups.length) {
+          state.groups = obj.groups.map((g, i) => normalizeGroup(g, i));
+          const savedUi = obj.ui || {};
+          Object.keys(state.ui).forEach(k => { if (savedUi[k] !== undefined) state.ui[k] = savedUi[k]; });
+          LANG = state.ui.lang || 'en';
+          setActiveGroup(obj.activeGroup || 0, { skipRender: true });
+          return true;
+        }
+      } catch (e) { /* fall through to readable parse */ }
+    }
+  }
+  // Fallback: parse each visible sheet as a group
+  const groups = [];
+  wb.SheetNames.filter(n => n !== STATE_SHEET).forEach(name => {
+    const g = parseSheetToGroup(wb.Sheets[name], name);
+    if (g) groups.push(g);
+  });
+  if (!groups.length) return false;
+  state.groups = groups;
+  setActiveGroup(0, { skipRender: true });
+  return true;
+}
+
+async function pickOpenFile() {
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
+      multiple: false
+    });
+    fileHandle = handle;
+    const ok = await readWorkbookIntoState(handle);
+    if (!ok) { alert('No CPK data found in this file.'); fileHandle = null; return; }
+    afterLoad(true);
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;      // user cancelled
+    console.error(err); alert('Open failed: ' + err.message);
+  }
+}
+
+async function createTemplateFile() {
+  try {
+    fileHandle = await window.showSaveFilePicker({
+      suggestedName: 'cpk-record.xlsx',
+      types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
+    });
+    bootDefaults();
+    afterLoad(false);
+    await writeWorkbook();   // materialize the new file
+  } catch (err) {
+    if (err && err.name === 'AbortError') { fileHandle = null; return; }
+    console.error(err); alert('Create failed: ' + err.message);
+  }
 }
 
 /* ============================================================
@@ -1775,15 +2170,22 @@ function stats(values) {
 }
 function calc(d) {
   const s = stats(d.data);
-  const T = (isNaN(d.upper) || isNaN(d.lower)) ? null : d.upper - d.lower;
-  const Tc = (isNaN(d.upper) || isNaN(d.lower)) ? null : (d.upper + d.lower) / 2;
-  if (s.n < 2 || s.std === null || s.std === 0 || T === null) {
-    return { ...s, T, Tc, Cp: null, CpkU: null, CpkL: null, Cpk: null };
+  const hasU = typeof d.upper === 'number' && !isNaN(d.upper);
+  const hasL = typeof d.lower === 'number' && !isNaN(d.lower);
+  const T = (hasU && hasL) ? d.upper - d.lower : null;
+  const Tc = (hasU && hasL) ? (d.upper + d.lower) / 2 : null;
+  if (s.n < 2 || s.std === null || s.std === 0) {
+    return { ...s, T, Tc, Cp: null, CPU: null, CPL: null, Cpk: null };
   }
-  const Cp = T / (6 * s.std);
-  const CpkU = (d.upper - s.mean) / (3 * s.std);
-  const CpkL = (s.mean - d.lower) / (3 * s.std);
-  return { ...s, T, Tc, Cp, CpkU, CpkL, Cpk: Math.min(CpkU, CpkL) };
+  // Cp needs BOTH limits (tolerance); one-sided gives only CPU or CPL.
+  const Cp = (hasU && hasL) ? T / (6 * s.std) : null;
+  const CPU = hasU ? (d.upper - s.mean) / (3 * s.std) : null;
+  const CPL = hasL ? (s.mean - d.lower) / (3 * s.std) : null;
+  let Cpk = null;
+  if (CPU !== null && CPL !== null) Cpk = Math.min(CPU, CPL);
+  else if (CPU !== null) Cpk = CPU;
+  else if (CPL !== null) Cpk = CPL;
+  return { ...s, T, Tc, Cp, CPU, CPL, Cpk };
 }
 const fmt = (v, p = 3) => (v === null || v === undefined || isNaN(v)) ? '—' : v.toFixed(p);
 function cpkBadge(v) {
@@ -1902,7 +2304,7 @@ function renderDsTable() {
       const i = +b.dataset.removeDs;
       state.datasets.splice(i, 1);
       // Reset spacing if outdated
-      if (state.ui.spacing && state.ui.spacing.length !== state.datasets.length) state.ui.spacing = null;
+      if (activeGroup().spacing && activeGroup().spacing.length !== state.datasets.length) activeGroup().spacing = null;
       onStateChange();
     });
   });
@@ -2041,8 +2443,8 @@ function renderStats() {
     { key: 'mean', label: 'X̄', formula: t('statMean'), p: 3 },
     { key: 'std', label: 'σₙ₋₁', formula: t('statStd'), p: 3 },
     { key: 'Cp', label: 'Cp', formula: t('statCp'), p: 3 },
-    { key: 'CpkU', label: 'Cpk(upper)', formula: t('statCpkU'), p: 3 },
-    { key: 'CpkL', label: 'Cpk(lower)', formula: t('statCpkL'), p: 3 },
+    { key: 'CPU', label: 'CPU', formula: t('statCPU'), p: 3 },
+    { key: 'CPL', label: 'CPL', formula: t('statCPL'), p: 3 },
     { key: 'Cpk', label: 'Cpk', formula: t('statCpkMin'), p: 3, highlight: true },
     { key: 'max', label: 'Max', formula: t('statMax'), p: 3 },
     { key: 'min', label: 'Min', formula: t('statMin'), p: 3 },
@@ -2106,8 +2508,8 @@ function renderDsStyleRow() {
    ============================================================ */
 function getSpacing() {
   const N = state.datasets.length;
-  if (state.ui.spacing && state.ui.spacing.length === N) {
-    return state.ui.spacing.slice();
+  if (activeGroup().spacing && activeGroup().spacing.length === N) {
+    return activeGroup().spacing.slice();
   }
   // Auto-distribute: equal spacing in [0.1, 0.9]
   if (N === 1) return [0.5];
@@ -2648,7 +3050,7 @@ function setupCapChartDrag() {
     if (dragging.kind === 'ds') {
       const sp = getSpacing();
       sp[dragging.idx] = frac;
-      state.ui.spacing = sp;
+      activeGroup().spacing = sp;
     } else if (dragging.kind === 'usl') {
       state.ui.uslLabelFrac = frac;
     } else if (dragging.kind === 'lsl') {
@@ -3265,7 +3667,7 @@ function addDataset() {
   if (state.datasets.length >= MAX_DATASETS) return;
   state.datasets.push(newDataset(state.datasets.length));
   // Reset spacing if existed (will auto-redistribute)
-  state.ui.spacing = null;
+  activeGroup().spacing = null;
   onStateChange();
 }
 
@@ -3310,85 +3712,21 @@ async function handleExcel(file) {
   try {
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data, { type: 'array' });
-    let ws = null;
-    for (const name of wb.SheetNames) {
-      const sheet = wb.Sheets[name];
-      if (sheet && Object.keys(sheet).length > 1) { ws = sheet; break; }
-    }
-    if (!ws) ws = wb.Sheets[wb.SheetNames[0]];
-    const get = cell => ws[cell] ? ws[cell].v : null;
-
-    // Direct cell refs (FM8.3.2-PE-17 layout: C8/D8 USL, C9/D9 LSL, C13:C42 / D13:D42 data)
-    let upper = [get('C8'), get('D8'), get('E8'), get('F8'), get('G8'), get('H8'), get('I8'), get('J8')];
-    let lower = [get('C9'), get('D9'), get('E9'), get('F9'), get('G9'), get('H9'), get('I9'), get('J9')];
-
-    // Fallback: search for "Upper Level"/"Lower Level"
-    if (typeof upper[0] !== 'number' || typeof lower[0] !== 'number') {
-      for (let row = 1; row <= 50; row++) {
-        const lblA = String(get('A' + row) || '').toLowerCase();
-        const lblB = String(get('B' + row) || '').toLowerCase();
-        const lbl = lblA + ' ' + lblB;
-        if (lbl.includes('upper level') || lbl.includes('usl')) {
-          for (let c = 0; c < 8; c++) upper[c] = get(String.fromCharCode(67 + c) + row);
-        }
-        if (lbl.includes('lower level') || lbl.includes('lsl')) {
-          for (let c = 0; c < 8; c++) lower[c] = get(String.fromCharCode(67 + c) + row);
-        }
-      }
-    }
-    // Find data start
-    let dataStart = 13;
-    for (let row = 1; row <= 50; row++) {
-      const lblA = String(get('A' + row) || '').toLowerCase();
-      if (lblA.includes('item data')) { dataStart = row + 1; break; }
-    }
-    // Detect how many dataset columns have data
-    const cols = [];
-    for (let c = 0; c < 8; c++) {
-      const letter = String.fromCharCode(67 + c);
-      const data = [];
-      let any = false;
-      for (let i = 0; i < MAX_ROWS; i++) {
-        const v = get(letter + (dataStart + i));
-        if (typeof v === 'number') { data.push(v); any = true; }
-        else data.push(null);
-      }
-      if (any) {
-        cols.push({ data, upper: upper[c], lower: lower[c] });
-      }
-    }
-    if (cols.length === 0) { alert('No data found in expected layout'); return; }
-
-    // Build new datasets (preserve user-set color/marker if dataset already exists)
-    const newDatasets = cols.slice(0, MAX_DATASETS).map((col, i) => {
-      const base = state.datasets[i] ? { ...state.datasets[i] } : newDataset(i);
-      base.upper = (typeof col.upper === 'number') ? col.upper : base.upper;
-      base.lower = (typeof col.lower === 'number') ? col.lower : base.lower;
-      base.data = [...col.data, ...Array(MAX_ROWS - col.data.length).fill(null)];
-      // Try to grab a name from row 11/12 (Item Data label row)
-      const letter = String.fromCharCode(67 + i);
-      const nameCandidate = get(letter + (dataStart - 2)) || get(letter + (dataStart - 1));
-      if (nameCandidate && typeof nameCandidate === 'string' && nameCandidate.length < 40) {
-        base.name = nameCandidate;
-      }
-      return base;
+    // Import every data sheet as a NEW group (appended to the workbook)
+    const imported = [];
+    wb.SheetNames.filter(n => n !== STATE_SHEET).forEach(name => {
+      const g = parseSheetToGroup(wb.Sheets[name], name);
+      if (g) imported.push(g);
     });
-    while (newDatasets.length < MIN_DATASETS) newDatasets.push(newDataset(newDatasets.length));
-    state.datasets = newDatasets;
-    state.ui.spacing = null;
-
-    // Header info — best effort
-    const partName = get('B4') || get('C4') || '';
-    const inspItem = get('B6') || get('C6') || '';
-    if (partName) state.common.partName = String(partName);
-    if (inspItem) state.common.inspectionItem = String(inspItem);
-    document.getElementById('partName').value = state.common.partName;
-    document.getElementById('inspectionItem').value = state.common.inspectionItem;
-
-    onStateChange();
+    if (imported.length === 0) { alert('No data found in expected layout'); return; }
+    const firstNew = state.groups.length;
+    state.groups = state.groups.concat(imported);
+    setActiveGroup(firstNew);            // jump to first imported group + render
+    saveState();
     document.getElementById('excelModal').classList.remove('show');
-    const totalPts = cols.reduce((acc, c) => acc + c.data.filter(x => x !== null).length, 0);
-    showToast(`${t('toastImported')} · ${cols.length} datasets, ${totalPts} pts`);
+    const totalPts = imported.reduce((acc, g) =>
+      acc + g.datasets.reduce((a, d) => a + d.data.filter(x => x !== null).length, 0), 0);
+    showToast(`${t('toastImported')} · ${imported.length} groups, ${totalPts} pts`);
   } catch (err) {
     alert('Excel import failed: ' + err.message);
     console.error(err);
@@ -3532,7 +3870,7 @@ function setupToolbar() {
   });
   // Reset spacing
   document.getElementById('resetSpacingBtn').onclick = () => {
-    state.ui.spacing = null;
+    activeGroup().spacing = null;
     drawCapChart(); saveState();
   };
   // Spec line width (Capability)
@@ -3933,20 +4271,18 @@ document.getElementById('exportJsonBtn').onclick = () => {
 
 function resetAll() {
   if (!confirm(t('confirmClear'))) return;
-  state.common = { partName: '', inspectionItem: '', figureDetail: '', accuracy: '' };
-  state.datasets = [newDataset(0), newDataset(1)];
-  state.ui.spacing = null;
-  // re-fill common inputs
-  ['partName', 'inspectionItem', 'figureDetail', 'accuracy'].forEach(id =>
-    document.getElementById(id).value = ''
-  );
-  onStateChange();
+  const g = activeGroup();
+  if (!g) return;
+  g.common = { partName: '', inspectionItem: '', figureDetail: '', accuracy: '' };
+  g.datasets = [newDataset(0), newDataset(1)];
+  g.spacing = null;
+  setActiveGroup(state.activeGroup);   // re-wire aliases, refresh inputs, render
 }
 
 /* ============================================================
    COMMON onStateChange — re-render & save
    ============================================================ */
-function onStateChange(opts = {}) {
+function renderAll(opts = {}) {
   if (!opts.skipDsTable) renderDsTable();
   if (!opts.skipDataGrid) renderDataGrid();
   renderStats();
@@ -3954,6 +4290,9 @@ function onStateChange(opts = {}) {
   drawCapChart();
   drawRunChart();
   drawBellChart();
+}
+function onStateChange(opts = {}) {
+  renderAll(opts);
   saveState();
 }
 
@@ -3981,11 +4320,11 @@ document.querySelectorAll('[data-close]').forEach(b => {
   b.onclick = e => e.target.closest('.modal-backdrop').classList.remove('show');
 });
 document.querySelectorAll('.modal-backdrop').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+  m.addEventListener('click', e => { if (e.target === m && !m.classList.contains('modal-locked')) m.classList.remove('show'); });
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-backdrop.show').forEach(m => m.classList.remove('show'));
+    document.querySelectorAll('.modal-backdrop.show:not(.modal-locked)').forEach(m => m.classList.remove('show'));
   }
 });
 
@@ -3995,14 +4334,121 @@ document.addEventListener('keydown', e => {
 document.getElementById('addDsBtn').onclick = addDataset;
 
 /* ============================================================
+   TAB BAR (groups) + FILE ACTIONS
+   ============================================================ */
+function renderTabBar() {
+  const bar = document.getElementById('tabBar');
+  const sel = document.getElementById('groupSelect');
+  if (bar) {
+    bar.innerHTML = '';
+    state.groups.forEach((g, i) => {
+      const tab = document.createElement('div');
+      tab.className = 'tab' + (i === state.activeGroup ? ' active' : '');
+      const label = document.createElement('span');
+      label.className = 'tab-label';
+      label.textContent = g.name;
+      label.title = g.name;
+      label.ondblclick = () => startRenameTab(i);
+      tab.appendChild(label);
+      if (state.groups.length > 1) {
+        const x = document.createElement('button');
+        x.className = 'tab-close';
+        x.innerHTML = '×';
+        x.title = t('tabRemove');
+        x.onclick = e => { e.stopPropagation(); removeGroup(i); };
+        tab.appendChild(x);
+      }
+      tab.onclick = () => { if (i !== state.activeGroup) setActiveGroup(i); };
+      bar.appendChild(tab);
+    });
+    const add = document.createElement('button');
+    add.className = 'tab-add';
+    add.textContent = '+';
+    add.title = t('tabAdd');
+    add.onclick = addGroup;
+    bar.appendChild(add);
+  }
+  if (sel) {
+    sel.innerHTML = '';
+    state.groups.forEach((g, i) => {
+      const o = document.createElement('option');
+      o.value = i; o.textContent = g.name;
+      if (i === state.activeGroup) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+}
+function startRenameTab(i) {
+  const name = prompt(t('tabRenamePrompt'), state.groups[i].name);
+  if (name === null) return;
+  renameGroup(i, name.trim() || state.groups[i].name);
+}
+function renameGroup(i, name) {
+  state.groups[i].name = name;
+  renderTabBar();
+  saveState();
+}
+function addGroup() {
+  state.groups.push(newGroup(state.groups.length));
+  setActiveGroup(state.groups.length - 1);
+  saveState();
+}
+function removeGroup(i) {
+  if (state.groups.length <= 1) return;
+  if (!confirm(t('confirmRemoveTab'))) return;
+  state.groups.splice(i, 1);
+  if (state.activeGroup >= state.groups.length) state.activeGroup = state.groups.length - 1;
+  setActiveGroup(state.activeGroup);
+  saveState();
+}
+function setupTabBar() {
+  const sel = document.getElementById('groupSelect');
+  if (sel) sel.onchange = e => setActiveGroup(+e.target.value);
+}
+function setupFileActions() {
+  const save = document.getElementById('saveFileBtn');
+  if (save) save.onclick = async () => { await writeWorkbook(); if (!dirty) showToast(t('toastFileSaved')); };
+  document.getElementById('openFileBtn')?.addEventListener('click', pickOpenFile);
+  document.getElementById('openFileBtn2')?.addEventListener('click', pickOpenFile);
+  document.getElementById('createTemplateBtn')?.addEventListener('click', createTemplateFile);
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+}
+function showBrowserGate() {
+  applyLang();
+  const m = document.getElementById('browserGate');
+  if (m) m.classList.add('show');
+}
+function showLinkFileModal() {
+  const m = document.getElementById('linkFileModal');
+  if (m) m.classList.add('show');
+}
+function hideLinkFileModal() {
+  const m = document.getElementById('linkFileModal');
+  if (m) m.classList.remove('show');
+}
+
+/* ============================================================
    BOOT
    ============================================================ */
+// Shared post-load wiring (run after a file is opened or created)
+function afterLoad(showLinked) {
+  syncToolbarFromState();
+  applyLang();          // translations + initial render of tables/charts
+  renderDataGrid();
+  renderDsStyleRow();
+  renderTabBar();
+  ['partName', 'inspectionItem', 'figureDetail', 'accuracy'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = state.common[id] || '';
+  });
+  markClean();
+  hideLinkFileModal();
+  if (showLinked) showToast(t('toastFileLinked'));
+}
+
 function boot() {
-  if (!loadState()) {
-    bootDefaults();
-  } else {
-    showToast(t('toastSettingsRestored'));
-  }
+  // The app persists to a local Excel file via the File System Access API (Chrome/Edge only)
+  if (!fsApiSupported()) { showBrowserGate(); return; }
   bindCommonInputs();
   setupExcelImport();
   setupImageImport();
@@ -4014,12 +4460,11 @@ function boot() {
   setupResizeHandles();
   setupAspectPresets();
   setupChartExport();
-  syncToolbarFromState();
-  applyLang();        // applies translations + triggers initial render
-  // applyLang() already calls renderDsTable, renderStats, drawCapChart, drawRunChart, drawBellChart
-  // but doesn't render the data grid + style row, so call onStateChange-like:
-  renderDataGrid();
-  renderDsStyleRow();
+  setupTabBar();
+  setupFileActions();
+  applyLang();          // localize the static UI (modals, topbar) before the picker
+  updateSaveIndicator();
+  showLinkFileModal();  // user must open/create a file (the buttons provide the gesture pickers need)
 }
 
 boot();

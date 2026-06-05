@@ -2,6 +2,18 @@
 
 All notable changes to this project. Format loosely based on [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Changed — Excel-file backend (replaces browser cache)
+- Persistence moved from `localStorage` to a **local Excel file** via the File System Access API (**Chrome / Edge only**; other browsers are blocked with a notice).
+- On open, the app prompts to **link a `.xlsx`** — open an existing workbook or create a new template.
+- **Multi-tab workbook:** each sheet/tab is one Cpk group. Switch tabs via a tab bar or dropdown; add / rename / remove groups in-app.
+- **Hybrid format:** each group sheet is human-readable (FM8.3.2-PE-17 layout) plus a hidden `__CPK_STATE__` sheet storing full state (colors, markers, chart positions, UI prefs) for exact restore.
+- **Auto-save** (debounced) writes back to the linked file, plus an explicit **Save** button and a saved/unsaved status chip.
+
+### Fixed
+- **One-sided spec capability:** with only USL (or only LSL), the tool no longer blanks all indices. `Cp` is shown only when both limits exist; **CPU** `(USL−X̄)/3σ` and **CPL** `(X̄−LSL)/3σ` are shown independently, and `Cpk` = the available one-sided index.
+
 ## [v1.0.0] — 2026-06
 
 Initial release. Single-file HTML app, ~4000 lines, ~150 KB.
