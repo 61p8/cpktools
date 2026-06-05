@@ -1,0 +1,4029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Process Capability Record</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<style>
+:root {
+  --bg: #F4F2EC;
+  --surface: #FFFFFF;
+  --surface-2: #FAF9F4;
+  --surface-3: #F0EDE5;
+  --border: #DDD9CE;
+  --border-strong: #B8B2A3;
+  --ink: #1A1714;
+  --ink-2: #555148;
+  --ink-3: #898477;
+  --accent: #D2232A;
+  --accent-dark: #9A0F19;
+  --good: #166534;
+  --warn: #B45309;
+  --bad: #B91C1C;
+  --grid: rgba(0,0,0,0.025);
+  --shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(20,17,15,0.04);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: 'IBM Plex Sans', 'Noto Sans Thai', 'Noto Sans JP', system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  line-height: 1.45;
+  min-height: 100vh;
+  padding: 0 0 60px 0;
+  -webkit-font-smoothing: antialiased;
+}
+body[data-lang="th"] { font-family: 'Noto Sans Thai', 'IBM Plex Sans', system-ui, sans-serif; }
+body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, sans-serif; }
+
+.mono { font-family: 'IBM Plex Mono', monospace; font-feature-settings: 'tnum' 1; }
+.label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ===== Top Bar ===== */
+.topbar {
+  background: var(--ink); color: white;
+  position: sticky; top: 0; z-index: 50;
+  border-bottom: 1px solid #000;
+}
+.topbar-stripe { height: 3px; background: var(--accent); }
+.topbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 28px;
+  max-width: 1500px; margin: 0 auto;
+}
+.topbar-brand {
+  display: flex; flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.topbar-title {
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(255,255,255,0.95);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.version-mark {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+}
+.version-mark .ver {
+  color: var(--accent); font-weight: 600;
+}
+.version-mark .author {
+  color: rgba(255,255,255,0.55);
+}
+.topbar-actions {
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+}
+
+.lang-switcher {
+  display: inline-flex;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-right: 8px;
+}
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  padding: 6px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.lang-btn:last-child { border-right: none; }
+.lang-btn:hover { color: white; }
+.lang-btn.active { background: var(--accent); color: white; font-weight: 600; }
+
+.btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: white;
+  padding: 7px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.btn:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); }
+.btn-primary { background: var(--accent); border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--border-strong);
+}
+.btn-ghost:hover { background: var(--surface-3); color: var(--ink); }
+.btn-dark { background: var(--ink); color: white; border: 1px solid var(--ink); }
+.btn-dark:hover { background: #000; }
+.btn svg { width: 14px; height: 14px; }
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 10px;
+}
+
+/* ===== Container ===== */
+.container {
+  max-width: 1500px;
+  margin: 24px auto;
+  padding: 0 28px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+/* ===== Section ===== */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  gap: 12px;
+}
+.section-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink);
+  display: flex; align-items: center; gap: 12px;
+}
+.section-title .num {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent); font-weight: 600;
+  font-size: 10px; letter-spacing: 0;
+}
+.section-title .marker {
+  display: inline-block; width: 3px; height: 14px; background: var(--accent);
+}
+.section-meta {
+  font-size: 11px; color: var(--ink-3); letter-spacing: 0.04em;
+}
+.section-actions { display: flex; gap: 6px; align-items: center; }
+.section-body { padding: 20px; }
+
+/* ===== Form grid ===== */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px 18px;
+}
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-2 { grid-column: span 2; }
+.field-4 { grid-column: span 4; }
+.field input, .field textarea, .field select {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  border-radius: 2px;
+  outline: none;
+  transition: all 0.12s;
+}
+.field input:focus, .field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(210,35,42,0.12);
+}
+.field input::placeholder { color: #BDB8AC; }
+
+/* ===== Per-dataset table ===== */
+.ds-table-wrap { overflow-x: auto; }
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  min-width: 600px;
+}
+.ds-table th, .ds-table td {
+  padding: 8px 10px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  text-align: center;
+}
+.ds-table tr:last-child td { border-bottom: none; }
+.ds-table th:last-child, .ds-table td:last-child { border-right: none; }
+.ds-table thead th {
+  background: var(--ink); color: white;
+  font-weight: 600;
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0;
+  position: relative;
+  min-width: 140px;
+}
+.ds-table .ds-col-header {
+  background: var(--data-color, var(--ink));
+  color: white;
+}
+.ds-table .label-cell {
+  text-align: left;
+  font-weight: 500;
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--ink-2);
+  width: 200px;
+  min-width: 180px;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+.ds-table .label-cell .formula {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 4px;
+}
+.ds-table input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  padding: 4px 0;
+  color: inherit;
+}
+.ds-table input[type="date"] { font-size: 12px; }
+.ds-table thead input {
+  color: white;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 11px 6px;
+  text-align: center;
+}
+.ds-table thead input::placeholder { color: rgba(255,255,255,0.4); }
+.ds-table tbody input { color: var(--ink); }
+.ds-table tbody input:focus { background: rgba(210,35,42,0.04); }
+.ds-table .computed { color: var(--ink-3); font-weight: 500; font-style: italic; }
+.ds-table .col-actions {
+  position: absolute;
+  top: 4px; right: 4px;
+  display: flex;
+  gap: 2px;
+}
+.col-x-btn {
+  background: rgba(0,0,0,0.2);
+  border: none;
+  color: rgba(255,255,255,0.6);
+  width: 18px; height: 18px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.col-x-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+
+.ds-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ds-counter {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-left: auto;
+}
+
+/* ===== Data grid (input) ===== */
+.data-input-wrap { display: flex; flex-direction: column; gap: 12px; }
+.data-grid-wrap { overflow-x: auto; }
+.data-grid {
+  display: grid;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: max-content;
+}
+.data-grid > .cell {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.data-grid > .cell.last-col { border-right: none; }
+.data-grid > .cell.last-row { border-bottom: none; }
+.data-grid .data-header {
+  background: var(--surface-2);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: center;
+  border-bottom: 2px solid var(--border-strong) !important;
+  padding: 10px 8px;
+  min-width: 130px;
+}
+.data-grid .data-header .swatch {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; margin-right: 6px;
+  vertical-align: middle;
+}
+.data-grid .data-num {
+  background: var(--surface-2);
+  color: var(--ink-3);
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  padding: 0;
+  min-width: 50px;
+  display: flex; align-items: center; justify-content: center;
+}
+.data-grid .data-cell { padding: 0; position: relative; min-width: 130px; }
+.data-grid input {
+  width: 100%; height: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  padding: 8px 6px;
+  color: var(--ink);
+}
+.data-grid .data-cell.focused { background: rgba(210,35,42,0.06); }
+.data-grid input::placeholder { color: #C5C0B3; }
+
+.paste-hint {
+  font-size: 11px;
+  color: var(--ink-3);
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-3);
+  border-radius: 2px;
+}
+.kbd {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  background: white;
+  border: 1px solid var(--border-strong);
+  padding: 2px 5px;
+  border-radius: 2px;
+}
+
+/* ===== Stats ===== */
+.stats-wrap { overflow-x: auto; }
+.stats-grid {
+  display: grid;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: max-content;
+}
+.stats-grid > .cell {
+  padding: 10px 14px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.stats-grid > .cell.last-col { border-right: none; }
+.stats-grid > .cell.last-row { border-bottom: none; }
+.stats-grid .stat-label {
+  background: var(--surface-2);
+  font-weight: 500;
+  color: var(--ink-2);
+  font-size: 12px;
+  display: flex; align-items: center; gap: 8px;
+  width: 280px;
+  min-width: 240px;
+}
+.stats-grid .stat-label .formula {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-left: auto;
+}
+.stats-grid .stat-value {
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  color: var(--ink);
+  min-width: 130px;
+}
+.stats-grid .stat-header {
+  color: white;
+  text-align: center;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 11px 14px;
+}
+.stats-grid .empty-corner { background: var(--ink); }
+
+.cpk-row .stat-label-cpk {
+  background: #FFF6CC !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  font-size: 13px;
+  border-top: 2px solid var(--warn) !important;
+}
+.cpk-row .stat-value-cpk {
+  background: #FFF8E0 !important;
+  font-weight: 700 !important;
+  font-size: 17px !important;
+  border-top: 2px solid var(--warn) !important;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.badge-good { background: var(--good); color: white; }
+.badge-warn { background: var(--warn); color: white; }
+.badge-bad { background: var(--bad); color: white; }
+
+/* ===== Charts ===== */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.charts-row-single { grid-template-columns: 1fr; }
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column;
+}
+.chart-card-header {
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chart-card-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.chart-card-actions .btn-sm {
+  padding: 4px 8px;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  background: white;
+  color: var(--ink-2);
+  border: 1px solid var(--border-strong);
+}
+.chart-card-actions .btn-sm:hover {
+  background: var(--ink); color: white; border-color: var(--ink);
+}
+.chart-card-actions .btn-sm svg { width: 11px; height: 11px; }
+.chart-card-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+}
+.chart-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  align-items: center;
+}
+.tool-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 4px;
+  border-right: 1px solid var(--border);
+  height: 26px;
+}
+.tool-group:last-child { border-right: none; }
+.tool-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-right: 4px;
+}
+.tool-label-sub {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--ink-3);
+  margin: 0 4px 0 6px;
+}
+.tool-label-sub:first-of-type { margin-left: 0; }
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.seg button {
+  background: white;
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: all 0.12s;
+  text-transform: uppercase;
+}
+.seg button:last-child { border-right: none; }
+.seg button:hover { background: var(--surface-2); }
+.seg button.active { background: var(--ink); color: white; }
+.seg button svg { width: 12px; height: 12px; vertical-align: middle; }
+.tool-counter {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  overflow: hidden;
+  align-items: center;
+}
+.tool-counter button {
+  background: white;
+  border: none;
+  width: 22px; height: 22px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.tool-counter button:hover { background: var(--surface-3); color: var(--ink); }
+.tool-counter span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 8px;
+  min-width: 28px;
+  text-align: center;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  height: 22px;
+  display: flex; align-items: center; justify-content: center;
+}
+.tool-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: white;
+  color: var(--ink-2);
+  user-select: none;
+  transition: all 0.12s;
+}
+.tool-toggle:hover { background: var(--surface-2); }
+.tool-toggle.active {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink);
+}
+.tool-toggle .check {
+  width: 10px; height: 10px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  display: inline-block;
+  position: relative;
+}
+.tool-toggle.active .check {
+  background: white;
+  border-color: white;
+}
+.tool-toggle.active .check::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--ink);
+  border-radius: 1px;
+}
+
+.ds-style-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: white;
+  align-items: center;
+}
+.ds-style-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 500;
+}
+.ds-style-chip .chip-name {
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 10px;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+.ds-style-chip input[type="color"] {
+  width: 20px; height: 20px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.ds-style-chip select {
+  border: 1px solid var(--border);
+  background: white;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 4px;
+  border-radius: 2px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  outline: none;
+}
+
+.chart-body { padding: 16px; flex: 1; min-height: 0; }
+.cap-chart-svg {
+  width: 100%; height: 100%;
+  display: block;
+  user-select: none;
+  touch-action: none;
+}
+.cap-chart-svg .draggable-handle { cursor: ew-resize; }
+.cap-chart-svg.horizontal .draggable-handle { cursor: ns-resize; }
+.cap-chart-svg .dragging { opacity: 0.85; }
+.cap-chart-svg .label-handle { cursor: grab; }
+.cap-chart-svg .label-handle:active { cursor: grabbing; }
+.cap-chart-svg .label-handle.dragging { cursor: grabbing; }
+.cap-chart-svg .cpk-handle { cursor: grab; }
+.cap-chart-svg .cpk-handle:hover rect { fill: rgba(0,0,0,0.04); }
+.cap-chart-svg .cpk-handle.dragging { cursor: grabbing; }
+.cap-chart-svg .cpk-handle.dragging rect { fill: rgba(0,0,0,0.06); }
+
+/* Resizable chart wrapper */
+.chart-resize-wrap {
+  position: relative;
+  margin: 0 auto;
+  background: white;
+  border: 1px dashed transparent;
+  transition: border-color 0.15s;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.chart-resize-wrap:hover {
+  border-color: var(--border);
+}
+.resize-handle {
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 18px; height: 18px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--ink-3) 50%, var(--ink-3) 60%, transparent 60%, transparent 70%, var(--ink-3) 70%, var(--ink-3) 80%, transparent 80%);
+  opacity: 0.45;
+  transition: opacity 0.15s;
+  z-index: 5;
+}
+.resize-handle:hover, .resize-handle.dragging { opacity: 1; background-color: rgba(210,35,42,0.12); }
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  border-radius: 0 0 3px 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.resize-handle:hover::before, .resize-handle.dragging::before { opacity: 1; }
+.resize-readout {
+  position: absolute;
+  top: 4px; right: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  background: rgba(20,17,15,0.78);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 6;
+  letter-spacing: 0.04em;
+}
+.chart-resize-wrap.resizing .resize-readout { opacity: 1; }
+
+/* Disabled-state visual for synced USL/LSL inputs */
+.ds-table input.synced-locked {
+  color: var(--ink-3) !important;
+  background: var(--surface-3) !important;
+  cursor: not-allowed;
+  font-style: italic;
+}
+.ds-table .label-cell .synced-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-3);
+  font-weight: 400;
+  font-style: italic;
+  margin-top: 1px;
+}
+
+/* ===== Modal ===== */
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(20,17,15,0.55);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.modal-backdrop.show { display: flex; animation: fadeIn 0.15s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface);
+  border-radius: 4px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+}
+.modal-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-2);
+}
+.modal-title {
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 11px;
+  display: flex; align-items: center; gap: 10px;
+}
+.modal-body { padding: 22px 24px; }
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--ink-3);
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 2px;
+}
+.close-btn:hover { color: var(--ink); background: var(--surface-3); }
+
+.upload-zone {
+  border: 2px dashed var(--border-strong);
+  border-radius: 3px;
+  padding: 36px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s;
+  background: var(--surface-2);
+}
+.upload-zone:hover { border-color: var(--accent); background: rgba(210,35,42,0.03); }
+.upload-zone.dragover { border-color: var(--accent); background: rgba(210,35,42,0.06); transform: scale(0.99); }
+.upload-zone .icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+}
+.upload-zone .title-line { font-weight: 600; margin-bottom: 4px; font-size: 13px; }
+.upload-zone .sub-line { font-size: 11px; color: var(--ink-3); }
+
+.notice {
+  background: #FFF6E0;
+  border-left: 3px solid var(--warn);
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #5C4400;
+  margin-top: 16px;
+  line-height: 1.6;
+  border-radius: 0 2px 2px 0;
+}
+.notice strong { color: #4A3500; }
+
+.progress-wrap { margin-top: 16px; }
+.progress-track {
+  background: var(--border);
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-bar {
+  background: var(--accent);
+  height: 100%;
+  width: 0%;
+  transition: width 0.2s;
+}
+.progress-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+
+#ocrText {
+  width: 100%;
+  height: 130px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  padding: 10px;
+  outline: none;
+  resize: vertical;
+  background: var(--surface-2);
+}
+#ocrText:focus { border-color: var(--accent); }
+
+.image-preview {
+  max-width: 100%;
+  max-height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  margin-top: 12px;
+  display: block;
+}
+
+.ocr-target-select {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 200;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  animation: slideIn 0.25s ease;
+  border-left: 3px solid var(--accent);
+  display: flex; align-items: center; gap: 8px;
+}
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ===== Print ===== */
+@media print {
+  body {
+    background: white;
+    background-image: none;
+    padding: 0;
+  }
+  .topbar, .modal-backdrop, .toast, .paste-hint, .chart-toolbar, .ds-style-row, .ds-controls, .section-actions { display: none !important; }
+  .container { margin: 0; padding: 8mm; max-width: 100%; gap: 6mm; }
+  .section, .chart-card { break-inside: avoid; box-shadow: none; }
+  .charts-row { gap: 8mm; }
+  .section-header { padding: 8px 12px; }
+  .section-body { padding: 12px; }
+  @page { size: A4 portrait; margin: 8mm; }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 980px) {
+  .container { padding: 0 16px; }
+  .form-grid { grid-template-columns: repeat(2, 1fr); }
+  .field-2, .field-4 { grid-column: span 2; }
+  .charts-row { grid-template-columns: 1fr; }
+  .topbar-content {
+    flex-wrap: wrap;
+    gap: 10px; padding: 10px 14px;
+  }
+  .topbar-title { font-size: 12px; letter-spacing: 0.16em; }
+}
+@media (max-width: 600px) {
+  .stats-grid .stat-label { width: 160px; min-width: 140px; }
+  .stats-grid .stat-label .formula { display: none; }
+}
+</style>
+</head>
+<body data-lang="en">
+
+<div class="topbar">
+  <div class="topbar-stripe"></div>
+  <div class="topbar-content">
+    <div class="topbar-brand">
+      <div class="topbar-title" data-i18n="topbarTitle">Process Capability Record</div>
+      <div class="version-mark">
+        <span class="ver" id="versionStr">v1.0.0</span>
+        <span class="author">by Sittisak. C (PE)</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="th">TH</button>
+        <button class="lang-btn" data-lang="ja">JP</button>
+      </div>
+      <button class="btn" id="importExcelBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        <span data-i18n="btnExcel">Excel</span>
+      </button>
+      <button class="btn" id="importImageBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        <span data-i18n="btnImage">Image</span>
+      </button>
+      <button class="btn" id="exportJsonBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span data-i18n="btnSave">Save</span>
+      </button>
+      <button class="btn btn-primary" id="printBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span data-i18n="btnPrint">Print</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 01: Common Information -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="marker"></span>
+        <span class="num">01</span>
+        <span data-i18n="secCommon">Common Information</span>
+      </div>
+      <div class="section-actions">
+        <button class="btn btn-ghost btn-sm" onclick="resetAll()" data-i18n="btnClearAll">Clear All</button>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="form-grid">
+        <div class="field field-2">
+          <label class="label" data-i18n="fldPartName">Part Name / No.</label>
+          <input type="text" id="partName" placeholder="—">
+        </div>
+        <div class="field field-2">
+          <label class="label" data-i18n="fldInspectionItem">Inspection Item</label>
+          <input type="text" id="inspectionItem" placeholder="—">
+        </div>
+        <div class="field field-2">
+          <label class="label" data-i18n="fldFigure">Figure / Detail</label>
+          <input type="text" id="figureDetail" placeholder="—">
+        </div>
+        <div class="field field-2">
+          <label class="label" data-i18n="fldAccuracy">Measurement Accuracy</label>
+          <input type="text" id="accuracy" placeholder="±0.01 mm">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02: Per-Dataset Information & Specs -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="marker"></span>
+        <span class="num">02</span>
+        <span data-i18n="secPerDataset">Per-Dataset Information & Spec Limits</span>
+      </div>
+      <div class="section-actions">
+        <button class="btn btn-ghost btn-sm" id="addDsBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;"><path d="M12 5v14M5 12h14"/></svg>
+          <span data-i18n="btnAddDs">Add Dataset</span>
+        </button>
+        <span class="ds-counter" id="dsCounter">2 / 8</span>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="ds-table-wrap">
+        <table class="ds-table" id="dsTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03: Measurement Data -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="marker"></span>
+        <span class="num">03</span>
+        <span data-i18n="secMeasurement">Measurement Data</span>
+      </div>
+      <div class="section-meta" data-i18n="secMeasurementMeta">n ≤ 30 · empty cells ignored</div>
+    </div>
+    <div class="section-body">
+      <div class="data-input-wrap">
+        <div class="paste-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span data-i18n="pasteHint">Tip: paste a column of numbers (<span class="kbd">⌘V</span> / <span class="kbd">Ctrl+V</span>) into any cell to fill subsequent rows automatically</span>
+        </div>
+        <div class="data-grid-wrap">
+          <div class="data-grid" id="dataGrid"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04: Statistics -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="marker"></span>
+        <span class="num">04</span>
+        <span data-i18n="secStatistics">Statistical Analysis</span>
+      </div>
+      <div class="section-meta" data-i18n="secStatsMeta">Cpk ≥ 1.33 = capable · ≥ 1.67 = excellent</div>
+    </div>
+    <div class="section-body">
+      <div class="stats-wrap">
+        <div class="stats-grid" id="statsGrid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title" data-i18n="chartCapTitle">Capability View</div>
+        <div class="chart-card-actions">
+          <button class="btn btn-sm" data-export="cap" data-fmt="copy-png" title="Copy PNG to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span data-i18n="toolCopyPng">Copy PNG</span>
+          </button>
+          <button class="btn btn-sm" data-export="cap" data-fmt="copy-svg" title="Copy SVG to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span data-i18n="toolCopySvg">Copy SVG</span>
+          </button>
+          <button class="btn btn-sm" data-export="cap" data-fmt="png" title="Save PNG">
+            <span data-i18n="toolSavePng">Save PNG</span>
+          </button>
+          <button class="btn btn-sm" data-export="cap" data-fmt="svg" title="Save SVG (vector)">
+            <span data-i18n="toolSaveSvg">Save SVG</span>
+          </button>
+        </div>
+      </div>
+      <!-- Chart toolbar -->
+      <div class="chart-toolbar">
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolOrient">Layout</span>
+          <div class="seg" id="orientSeg">
+            <button data-orient="vertical" class="active" data-i18n="toolVertical">Vertical</button>
+            <button data-orient="horizontal" data-i18n="toolHorizontal">Horizontal</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolFont">Font</span>
+          <div class="tool-counter">
+            <button id="fontDec">−</button>
+            <span id="fontVal">11</span>
+            <button id="fontInc">+</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolDecimals">Decimals</span>
+          <div class="tool-counter">
+            <button id="decDec">−</button>
+            <span id="decVal">3</span>
+            <button id="decInc">+</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolShow">Show</span>
+          <button class="tool-toggle active" data-show="max"><span class="check"></span><span data-i18n="toolMax">Max</span></button>
+          <button class="tool-toggle active" data-show="avg"><span class="check"></span>X̄</button>
+          <button class="tool-toggle active" data-show="min"><span class="check"></span><span data-i18n="toolMin">Min</span></button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolLine">Line</span>
+          <div class="tool-counter">
+            <button id="capSpecDec">−</button>
+            <span id="capSpecVal">2</span>
+            <button id="capSpecInc">+</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolSlash">Slash</span>
+          <span class="tool-label-sub" data-i18n="toolSlashLen">Length</span>
+          <div class="tool-counter">
+            <button id="slashLenDec">−</button>
+            <span id="slashLenVal">10</span>
+            <button id="slashLenInc">+</button>
+          </div>
+          <span class="tool-label-sub" data-i18n="toolSlashGap">Gap</span>
+          <div class="tool-counter">
+            <button id="slashGapDec">−</button>
+            <span id="slashGapVal">4</span>
+            <button id="slashGapInc">+</button>
+          </div>
+          <span class="tool-label-sub" data-i18n="toolSlashAngle">Angle</span>
+          <div class="tool-counter">
+            <button id="slashAngDec">−</button>
+            <span id="slashAngVal">30°</span>
+            <button id="slashAngInc">+</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolAspect">Aspect</span>
+          <div class="seg" data-aspect-seg="cap">
+            <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
+            <button data-aspect="16:9">16:9</button>
+            <button data-aspect="4:3">4:3</button>
+            <button data-aspect="1:1">1:1</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <button class="btn btn-ghost btn-sm" id="resetSpacingBtn" data-i18n="toolResetSpacing">Reset Spacing</button>
+        </div>
+      </div>
+      <!-- Per-dataset style row -->
+      <div class="ds-style-row" id="dsStyleRow"></div>
+      <div class="chart-body">
+        <div class="chart-resize-wrap" id="capWrap" data-resize="cap">
+          <svg class="cap-chart-svg" id="capChart" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="resize-readout" id="capReadout">600 × 480</div>
+          <div class="resize-handle" data-resize-handle="cap" title="Drag to resize"></div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title" data-i18n="chartBellTitle">Distribution View</div>
+        <div class="chart-card-actions">
+          <button class="btn btn-sm" data-export="bell" data-fmt="copy-png" title="Copy PNG to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span data-i18n="toolCopyPng">Copy PNG</span>
+          </button>
+          <button class="btn btn-sm" data-export="bell" data-fmt="copy-svg" title="Copy SVG to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span data-i18n="toolCopySvg">Copy SVG</span>
+          </button>
+          <button class="btn btn-sm" data-export="bell" data-fmt="png" title="Save PNG">
+            <span data-i18n="toolSavePng">Save PNG</span>
+          </button>
+          <button class="btn btn-sm" data-export="bell" data-fmt="svg" title="Save SVG (vector)">
+            <span data-i18n="toolSaveSvg">Save SVG</span>
+          </button>
+        </div>
+      </div>
+      <div class="chart-toolbar">
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolOrient">Layout</span>
+          <div class="seg" id="bellOrientSeg">
+            <button data-orient="vertical" class="active" data-i18n="toolVertical">Vertical</button>
+            <button data-orient="horizontal" data-i18n="toolHorizontal">Horizontal</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolFont">Font</span>
+          <div class="tool-counter">
+            <button id="bellFontDec">−</button>
+            <span id="bellFontVal">11</span>
+            <button id="bellFontInc">+</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolDecimals">Decimals</span>
+          <div class="tool-counter">
+            <button id="bellDecDec">−</button>
+            <span id="bellDecVal">3</span>
+            <button id="bellDecInc">+</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolShow">Show</span>
+          <button class="tool-toggle active" data-bell-show="mean"><span class="check"></span><span data-i18n="toolMean">Mean</span></button>
+          <button class="tool-toggle active" data-bell-show="3sigma"><span class="check"></span><span data-i18n="tool3Sigma">±3σ</span></button>
+          <button class="tool-toggle" data-bell-show="4sigma"><span class="check"></span><span data-i18n="tool4Sigma">±4σ</span></button>
+          <button class="tool-toggle active" data-bell-show="spec"><span class="check"></span><span data-i18n="toolSpec">Spec</span></button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolLine">Line</span>
+          <div class="tool-counter">
+            <button id="bellSpecDec">−</button>
+            <span id="bellSpecVal">2</span>
+            <button id="bellSpecInc">+</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolAspect">Aspect</span>
+          <div class="seg" data-aspect-seg="bell">
+            <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
+            <button data-aspect="16:9">16:9</button>
+            <button data-aspect="4:3">4:3</button>
+            <button data-aspect="1:1">1:1</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart-body">
+        <div class="chart-resize-wrap" id="bellWrap" data-resize="bell">
+          <svg class="cap-chart-svg" id="bellChart" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="resize-readout" id="bellReadout">700 × 420</div>
+          <div class="resize-handle" data-resize-handle="bell" title="Drag to resize"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bell Curve / Distribution View -->
+  <div class="charts-row charts-row-single">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-title" data-i18n="chartRunTitle">Run Chart</div>
+        <div class="chart-card-actions">
+          <button class="btn btn-sm" data-export="run" data-fmt="copy-png" title="Copy PNG to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span data-i18n="toolCopyPng">Copy PNG</span>
+          </button>
+          <button class="btn btn-sm" data-export="run" data-fmt="png" title="Save PNG">
+            <span data-i18n="toolSavePng">Save PNG</span>
+          </button>
+        </div>
+      </div>
+      <div class="chart-toolbar">
+        <div class="tool-group">
+          <span class="tool-label" data-i18n="toolAspect">Aspect</span>
+          <div class="seg" data-aspect-seg="run">
+            <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
+            <button data-aspect="16:9">16:9</button>
+            <button data-aspect="4:3">4:3</button>
+            <button data-aspect="1:1">1:1</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart-body">
+        <div class="chart-resize-wrap" id="runWrap" data-resize="run" style="position:relative;">
+          <canvas id="runChart"></canvas>
+          <div class="resize-readout" id="runReadout">600 × 520</div>
+          <div class="resize-handle" data-resize-handle="run" title="Drag to resize"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Excel Modal ===== -->
+<div class="modal-backdrop" id="excelModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><span style="color:var(--accent)">▣</span><span data-i18n="modalExcelTitle">Import from Excel</span></div>
+      <button class="close-btn" data-close>&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="excelDropZone">
+        <div class="icon">⬢</div>
+        <div class="title-line" data-i18n="excelDropTitle">Drop Excel file (.xlsx / .xlsm / .xls)</div>
+        <div class="sub-line" data-i18n="orClickBrowse">or click to browse</div>
+        <input type="file" id="excelFile" accept=".xlsx,.xlsm,.xls" hidden>
+      </div>
+      <div class="notice" data-i18n="excelNotice">
+        <strong>Compatible with FM8.3.2-PE-17 template.</strong><br>
+        Auto-detects spec limits and up to 30 measurement values per dataset (columns C and D).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Image Modal ===== -->
+<div class="modal-backdrop" id="imageModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><span style="color:var(--accent)">▤</span><span data-i18n="modalImageTitle">Import from Image (OCR)</span></div>
+      <button class="close-btn" data-close>&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="imageDropZone">
+        <div class="icon">⬚</div>
+        <div class="title-line" data-i18n="imageDropTitle">Drop image file (PNG / JPG)</div>
+        <div class="sub-line" data-i18n="orClickBrowse">or click to browse</div>
+        <input type="file" id="imageFile" accept="image/*" hidden>
+      </div>
+      <img id="imagePreview" class="image-preview" style="display:none;">
+      <div class="progress-wrap" id="ocrProgress" style="display:none;">
+        <div class="progress-text" id="ocrStatus">Processing...</div>
+        <div class="progress-track"><div class="progress-bar" id="ocrBar"></div></div>
+      </div>
+      <div id="ocrResult" style="display:none;margin-top:18px;">
+        <div class="label" data-i18n="ocrExtracted">Extracted Numbers — review & edit</div>
+        <textarea id="ocrText" placeholder="One number per line, or comma-separated"></textarea>
+        <div class="ocr-target-select" id="ocrTargetSelect"></div>
+      </div>
+      <div class="notice" data-i18n="imageNotice">
+        <strong>OCR Tip:</strong> Best results on clear, printed numbers in a column.
+        Crop the image to just the numerical column for best accuracy.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="appScript">
+/* ============================================================
+   APP META
+   ============================================================ */
+const APP_VERSION = 'v1.0.0';
+const APP_AUTHOR  = 'Sittisak. C (PE)';
+const STORAGE_KEY = 'cpk-tool-state-v2';
+const MAX_DATASETS = 8;
+const MIN_DATASETS = 2;
+const MAX_ROWS = 30;
+
+document.getElementById('versionStr').textContent = APP_VERSION;
+
+/* ============================================================
+   i18n — 3 languages
+   ============================================================ */
+const I18N = {
+  en: {
+    topbarTitle: 'Process Capability Record',
+    btnExcel: 'Excel', btnImage: 'Image', btnSave: 'Save', btnPrint: 'Print',
+    secCommon: 'Common Information',
+    secPerDataset: 'Per-Dataset Information & Spec Limits',
+    secMeasurement: 'Measurement Data',
+    secMeasurementMeta: 'n ≤ 30 · empty cells ignored',
+    secStatistics: 'Statistical Analysis',
+    secStatsMeta: 'Cpk ≥ 1.33 = capable · ≥ 1.67 = excellent',
+    chartCapTitle: 'Capability View',
+    chartCapMeta: 'drag dataset labels to rearrange',
+    chartRunTitle: 'Run Chart',
+    chartRunMeta: 'data sequence n=1…30',
+    btnClearAll: 'Clear All',
+    btnAddDs: 'Add Dataset',
+    fldPartName: 'Part Name / No.',
+    fldInspectionItem: 'Inspection Item',
+    fldFigure: 'Figure / Detail',
+    fldAccuracy: 'Measurement Accuracy',
+    rowName: 'Dataset Name',
+    rowMC: 'M/C Name / No.',
+    rowDate: 'Measuring Date',
+    rowChecker: 'Checker',
+    rowTool: 'Measurement Tool',
+    rowCondition: 'Condition',
+    rowUSL: 'Upper Level (USL)',
+    rowLSL: 'Lower Level (LSL)',
+    rowT: 'T (Tolerance)',
+    rowTc: 'Tc (Center)',
+    statN: 'sample size',
+    statMean: 'average',
+    statStd: 'std dev (sample)',
+    statCp: 'T / 6σ',
+    statCpkU: '(USL−X̄)/3σ',
+    statCpkL: '(X̄−LSL)/3σ',
+    statCpkMin: 'MIN(upper, lower)',
+    statMax: 'data max',
+    statMin: 'data min',
+    badgeExcellent: 'Excellent', badgeCapable: 'Capable',
+    badgeAdequate: 'Adequate', badgeBad: 'Not capable',
+    pasteHint: 'Tip: paste a column of numbers (<span class="kbd">⌘V</span> / <span class="kbd">Ctrl+V</span>) into any cell to fill subsequent rows automatically',
+    toolOrient: 'Layout', toolVertical: 'Vertical', toolHorizontal: 'Horizontal',
+    toolFont: 'Font', toolDecimals: 'Decimals', toolShow: 'Show',
+    toolMax: 'Max', toolMin: 'Min', toolResetSpacing: 'Reset Spacing',
+    toolAspect: 'Aspect', toolFree: 'Free', toolLock: 'Lock',
+    toolExport: 'Export', toolCopyPng: 'Copy PNG', toolCopySvg: 'Copy SVG', toolSavePng: 'Save PNG', toolSaveSvg: 'Save SVG',
+    chartBellTitle: 'Distribution View',
+    chartBellMeta: 'normal distribution (PDF) — drag spec labels to reposition',
+    toolMean: 'Mean', tool3Sigma: '±3σ', tool4Sigma: '±4σ', toolSpec: 'Spec', toolLine: 'Line',
+    toolSlash: 'Slash', toolSlashLen: 'Length', toolSlashGap: 'Gap', toolSlashAngle: 'Angle',
+    rowSyncedFromFirst: '(synced from #1)',
+    toastCopied: 'Image copied to clipboard',
+    toastCopyFail: 'Copy failed — saved as file instead',
+    toastSavedPng: 'Saved PNG',
+    toastSavedSvg: 'Saved SVG',
+    modalExcelTitle: 'Import from Excel',
+    modalImageTitle: 'Import from Image (OCR)',
+    excelDropTitle: 'Drop Excel file (.xlsx / .xlsm / .xls)',
+    imageDropTitle: 'Drop image file (PNG / JPG)',
+    orClickBrowse: 'or click to browse',
+    excelNotice: '<strong>Compatible with FM8.3.2-PE-17 template.</strong><br>Auto-detects spec limits and up to 30 measurement values per dataset.',
+    imageNotice: '<strong>OCR Tip:</strong> Best results on clear, printed numbers in a column. Crop the image for best accuracy.',
+    ocrExtracted: 'Extracted Numbers — review & edit',
+    applyTo: 'Apply →',
+    confirmClear: 'Clear all data and start fresh?',
+    confirmRemoveDs: 'Remove this dataset?',
+    toastImported: 'Imported',
+    toastApplied: 'Applied',
+    toastSaved: 'Saved JSON file',
+    toastSettingsRestored: 'Settings restored',
+    noNums: 'No numbers found',
+  },
+  th: {
+    topbarTitle: 'บันทึกค่าความสามารถของกระบวนการ',
+    btnExcel: 'Excel', btnImage: 'รูปภาพ', btnSave: 'บันทึก', btnPrint: 'พิมพ์',
+    secCommon: 'ข้อมูลทั่วไป',
+    secPerDataset: 'ข้อมูลแต่ละชุด & ขีดจำกัด',
+    secMeasurement: 'ค่าที่วัดได้',
+    secMeasurementMeta: 'n ≤ 30 · ช่องว่างจะถูกข้าม',
+    secStatistics: 'การวิเคราะห์ทางสถิติ',
+    secStatsMeta: 'Cpk ≥ 1.33 = ผ่าน · ≥ 1.67 = ดีเยี่ยม',
+    chartCapTitle: 'มุมมอง Capability',
+    chartCapMeta: 'ลากชื่อชุดข้อมูลเพื่อจัดเรียง',
+    chartRunTitle: 'กราฟลำดับข้อมูล',
+    chartRunMeta: 'ลำดับข้อมูล n=1…30',
+    btnClearAll: 'เคลียร์ทั้งหมด',
+    btnAddDs: 'เพิ่มชุดข้อมูล',
+    fldPartName: 'ชื่อ / เลขชิ้นงาน',
+    fldInspectionItem: 'รายการตรวจ',
+    fldFigure: 'รายละเอียด / รูป',
+    fldAccuracy: 'ความละเอียดที่วัด',
+    rowName: 'ชื่อชุดข้อมูล',
+    rowMC: 'ชื่อ / เลขเครื่อง',
+    rowDate: 'วันที่วัด',
+    rowChecker: 'ผู้ตรวจ',
+    rowTool: 'เครื่องมือวัด',
+    rowCondition: 'เงื่อนไข',
+    rowUSL: 'ขีดจำกัดบน (USL)',
+    rowLSL: 'ขีดจำกัดล่าง (LSL)',
+    rowT: 'T (ค่าความคลาดเคลื่อน)',
+    rowTc: 'Tc (ค่ากลาง)',
+    statN: 'จำนวนตัวอย่าง',
+    statMean: 'ค่าเฉลี่ย',
+    statStd: 'ส่วนเบี่ยงเบนมาตรฐาน',
+    statCp: 'T / 6σ',
+    statCpkU: '(USL−X̄)/3σ',
+    statCpkL: '(X̄−LSL)/3σ',
+    statCpkMin: 'MIN(บน, ล่าง)',
+    statMax: 'ค่าสูงสุด',
+    statMin: 'ค่าต่ำสุด',
+    badgeExcellent: 'ดีเยี่ยม', badgeCapable: 'ผ่าน',
+    badgeAdequate: 'พอใช้', badgeBad: 'ไม่ผ่าน',
+    pasteHint: 'เคล็ดลับ: paste คอลัมน์ตัวเลข (<span class="kbd">⌘V</span> / <span class="kbd">Ctrl+V</span>) ลงในช่องใดก็ได้ ระบบจะกรอกแถวถัดไปให้อัตโนมัติ',
+    toolOrient: 'รูปแบบ', toolVertical: 'แนวตั้ง', toolHorizontal: 'แนวนอน',
+    toolFont: 'ขนาด', toolDecimals: 'ทศนิยม', toolShow: 'แสดง',
+    toolMax: 'สูงสุด', toolMin: 'ต่ำสุด', toolResetSpacing: 'รีเซ็ตระยะห่าง',
+    toolAspect: 'อัตราส่วน', toolFree: 'อิสระ', toolLock: 'ล็อค',
+    toolExport: 'ส่งออก', toolCopyPng: 'คัดลอก PNG', toolCopySvg: 'คัดลอก SVG', toolSavePng: 'บันทึก PNG', toolSaveSvg: 'บันทึก SVG',
+    chartBellTitle: 'กราฟการกระจายตัว',
+    chartBellMeta: 'การแจกแจงปกติ (PDF) — ลาก label ขีดจำกัดเพื่อย้ายตำแหน่ง',
+    toolMean: 'ค่าเฉลี่ย', tool3Sigma: '±3σ', tool4Sigma: '±4σ', toolSpec: 'ขีดจำกัด', toolLine: 'หนาเส้น',
+    toolSlash: 'ขีดเฉียง', toolSlashLen: 'ยาว', toolSlashGap: 'ห่าง', toolSlashAngle: 'มุม',
+    rowSyncedFromFirst: '(ใช้ค่าจากชุดแรก)',
+    toastCopied: 'คัดลอกภาพไปคลิปบอร์ดแล้ว',
+    toastCopyFail: 'คัดลอกไม่สำเร็จ — บันทึกเป็นไฟล์แทน',
+    toastSavedPng: 'บันทึก PNG แล้ว',
+    toastSavedSvg: 'บันทึก SVG แล้ว',
+    modalExcelTitle: 'นำเข้าจาก Excel',
+    modalImageTitle: 'นำเข้าจากรูปภาพ (OCR)',
+    excelDropTitle: 'ลากไฟล์ Excel (.xlsx / .xlsm / .xls)',
+    imageDropTitle: 'ลากไฟล์รูปภาพ (PNG / JPG)',
+    orClickBrowse: 'หรือคลิกเพื่อเลือกไฟล์',
+    excelNotice: '<strong>รองรับเทมเพลต FM8.3.2-PE-17</strong><br>ตรวจหาขีดจำกัดและค่าวัดสูงสุด 30 ค่าต่อชุดข้อมูลโดยอัตโนมัติ',
+    imageNotice: '<strong>เคล็ดลับ OCR:</strong> ใช้ได้ผลดีกับตัวเลขพิมพ์ที่ชัด ครอปภาพให้เหลือเฉพาะคอลัมน์ตัวเลขเพื่อความแม่นยำ',
+    ocrExtracted: 'ตัวเลขที่ดึงมา — ตรวจสอบและแก้ไข',
+    applyTo: 'ใช้ที่ →',
+    confirmClear: 'ลบข้อมูลทั้งหมดและเริ่มใหม่หรือไม่?',
+    confirmRemoveDs: 'ลบชุดข้อมูลนี้?',
+    toastImported: 'นำเข้าสำเร็จ',
+    toastApplied: 'ใช้ค่าแล้ว',
+    toastSaved: 'บันทึกไฟล์ JSON แล้ว',
+    toastSettingsRestored: 'กู้คืนการตั้งค่าแล้ว',
+    noNums: 'ไม่พบตัวเลข',
+  },
+  ja: {
+    topbarTitle: '工程能力記録',
+    btnExcel: 'Excel', btnImage: '画像', btnSave: '保存', btnPrint: '印刷',
+    secCommon: '共通情報',
+    secPerDataset: 'データセット情報・規格値',
+    secMeasurement: '測定データ',
+    secMeasurementMeta: 'n ≤ 30 · 空欄は無視',
+    secStatistics: '統計分析',
+    secStatsMeta: 'Cpk ≥ 1.33 = 合格 · ≥ 1.67 = 優秀',
+    chartCapTitle: 'Capability ビュー',
+    chartCapMeta: 'ラベルをドラッグして並べ替え',
+    chartRunTitle: 'ランチャート',
+    chartRunMeta: 'データ順序 n=1…30',
+    btnClearAll: 'すべてクリア',
+    btnAddDs: 'データセット追加',
+    fldPartName: '部品名 / 番号',
+    fldInspectionItem: '検査項目',
+    fldFigure: '図面 / 詳細',
+    fldAccuracy: '測定精度',
+    rowName: 'データセット名',
+    rowMC: '機械名 / 番号',
+    rowDate: '測定日',
+    rowChecker: '測定者',
+    rowTool: '測定器',
+    rowCondition: '条件',
+    rowUSL: '上限 (USL)',
+    rowLSL: '下限 (LSL)',
+    rowT: 'T (公差)',
+    rowTc: 'Tc (中心)',
+    statN: 'サンプル数',
+    statMean: '平均',
+    statStd: '標準偏差(標本)',
+    statCp: 'T / 6σ',
+    statCpkU: '(USL−X̄)/3σ',
+    statCpkL: '(X̄−LSL)/3σ',
+    statCpkMin: 'MIN(上, 下)',
+    statMax: '最大値',
+    statMin: '最小値',
+    badgeExcellent: '優秀', badgeCapable: '合格',
+    badgeAdequate: '適度', badgeBad: '不合格',
+    pasteHint: 'ヒント: 数値列を<span class="kbd">⌘V</span> / <span class="kbd">Ctrl+V</span>で貼り付けると自動入力',
+    toolOrient: 'レイアウト', toolVertical: '縦', toolHorizontal: '横',
+    toolFont: 'フォント', toolDecimals: '小数点', toolShow: '表示',
+    toolMax: '最大', toolMin: '最小', toolResetSpacing: '間隔リセット',
+    toolAspect: '縦横比', toolFree: '自由', toolLock: 'ロック',
+    toolExport: 'エクスポート', toolCopyPng: 'PNGコピー', toolCopySvg: 'SVGコピー', toolSavePng: 'PNG保存', toolSaveSvg: 'SVG保存',
+    chartBellTitle: '分布ビュー',
+    chartBellMeta: '正規分布 (PDF) — 規格ラベルをドラッグで再配置',
+    toolMean: '平均', tool3Sigma: '±3σ', tool4Sigma: '±4σ', toolSpec: '規格', toolLine: '線幅',
+    toolSlash: '斜線', toolSlashLen: '長さ', toolSlashGap: '間隔', toolSlashAngle: '角度',
+    rowSyncedFromFirst: '(#1から同期)',
+    toastCopied: 'クリップボードにコピー',
+    toastCopyFail: 'コピー失敗 — ファイルに保存',
+    toastSavedPng: 'PNG保存',
+    toastSavedSvg: 'SVG保存',
+    modalExcelTitle: 'Excelから読み込み',
+    modalImageTitle: '画像から読み込み (OCR)',
+    excelDropTitle: 'Excelファイルをドロップ (.xlsx / .xlsm / .xls)',
+    imageDropTitle: '画像ファイルをドロップ (PNG / JPG)',
+    orClickBrowse: 'またはクリックして選択',
+    excelNotice: '<strong>FM8.3.2-PE-17 テンプレート対応</strong><br>規格値とデータセットごとの最大30測定値を自動検出',
+    imageNotice: '<strong>OCRヒント:</strong> 印刷された明瞭な数値で最良の結果。数値列のみにトリミングしてください',
+    ocrExtracted: '抽出された数値 — 確認・編集',
+    applyTo: '適用 →',
+    confirmClear: 'すべてのデータを消去して最初からやり直しますか？',
+    confirmRemoveDs: 'このデータセットを削除しますか？',
+    toastImported: 'インポート完了',
+    toastApplied: '適用完了',
+    toastSaved: 'JSONファイルを保存',
+    toastSettingsRestored: '設定を復元',
+    noNums: '数値が見つかりません',
+  }
+};
+
+let LANG = 'en';
+function t(key) { return (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key; }
+function applyLang() {
+  document.body.dataset.lang = LANG;
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    el.innerHTML = t(key);
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === LANG);
+  });
+  // Re-render dynamic tables (their headers depend on lang)
+  renderDsTable();
+  renderStats();
+  drawCapChart();
+  drawRunChart();
+  drawBellChart();
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const DEFAULT_COLORS = ['#1E3A8A', '#B91C73', '#0F766E', '#A16207', '#7C3AED', '#BE123C', '#15803D', '#475569'];
+const MARKER_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'star', 'cross'];
+
+function newDataset(idx) {
+  return {
+    id: 'ds-' + Date.now() + '-' + Math.floor(Math.random() * 9999),
+    name: 'Dataset ' + (idx + 1),
+    mc: '', date: '', checker: '', tool: '', condition: '',
+    upper: 7, lower: 1,
+    data: Array(MAX_ROWS).fill(null),
+    color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length],
+    marker: MARKER_SHAPES[idx % MARKER_SHAPES.length],
+    // Cpk label offset from default position (SVG units); null = default placement
+    cpkOffset: null  // {dx, dy} when user has dragged
+  };
+}
+
+const state = {
+  common: { partName: '', inspectionItem: '', figureDetail: '', accuracy: '' },
+  datasets: [],
+  ui: {
+    lang: 'en',
+    capOrient: 'vertical',     // 'vertical' or 'horizontal'
+    capFont: 11,               // 8..18
+    capDecimals: 3,            // 0..4
+    showMax: true, showAvg: true, showMin: true,
+    spacing: null,             // array of relative positions [0..1] per dataset, or null = auto-distribute
+    // Resizable canvases
+    capWidth: 600, capHeight: 480,
+    runWidth: 600, runHeight: 520,
+    capAspect: 'free',         // 'free' | '16:9' | '4:3' | '1:1'
+    runAspect: 'free',
+    // USL/LSL global label positions (fraction along the line, 0..1)
+    uslLabelFrac: 0.92,
+    lslLabelFrac: 0.92,
+    // USL/LSL stroke width (Capability)
+    capSpecWidth: 2,
+    // Spec line slash terminator settings (shared by Capability + Distribution)
+    specSlashLen: 10,
+    specSlashOffset: 4,
+    specSlashAngle: 30,
+    // Bell / Distribution chart
+    bellOrient: 'vertical',  // 'vertical' = measurement on Y, bell sideways (matches sample); 'horizontal' = measurement on X, classic upright bell
+    bellFont: 11,
+    bellDecimals: 3,
+    bellShowMean: true,
+    bellShow3Sigma: true,
+    bellShow4Sigma: false,
+    bellShowSpec: true,
+    bellSpecWidth: 2,
+    bellWidth: 700, bellHeight: 420,
+    bellAspect: 'free',
+    bellUslLabelFrac: 0.92,
+    bellLslLabelFrac: 0.92,
+  }
+};
+
+// Boot with 2 datasets
+function bootDefaults() {
+  state.datasets = [newDataset(0), newDataset(1)];
+  // Demo data from the original FM8.3.2-PE-17
+  state.datasets[0].name = 'Current/DNJP';
+  state.datasets[0].data = [2, 2, 2, 3, 4, 2, 2, 5, 5, 5, ...Array(20).fill(null)];
+  state.datasets[1].name = 'New/DNTH';
+  state.datasets[1].data = [2, 3, 4, 5, 5, 4, 3, 1.8, 2, 1.8, ...Array(20).fill(null)];
+}
+
+/* ============================================================
+   PERSISTENCE (localStorage with try/catch)
+   ============================================================ */
+function saveState() {
+  try {
+    const minimal = {
+      v: APP_VERSION,
+      common: state.common,
+      datasets: state.datasets,
+      ui: state.ui
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(minimal));
+  } catch (e) { /* silently ignore (artifact env) */ }
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const obj = JSON.parse(raw);
+    if (!obj || !Array.isArray(obj.datasets) || obj.datasets.length < MIN_DATASETS) return false;
+    state.common = Object.assign({}, state.common, obj.common || {});
+    state.datasets = obj.datasets.map((d, i) => Object.assign(newDataset(i), d));
+    // Merge: saved state first, then defaults fill in missing fields, with explicit fallback for known fields
+    const savedUi = obj.ui || {};
+    Object.keys(state.ui).forEach(k => {
+      if (savedUi[k] !== undefined) state.ui[k] = savedUi[k];
+    });
+    LANG = state.ui.lang || 'en';
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ============================================================
+   STATISTICS
+   ============================================================ */
+function stats(values) {
+  const v = values.filter(x => x !== null && !isNaN(x));
+  const n = v.length;
+  if (n === 0) return { n: 0, mean: null, std: null, max: null, min: null };
+  const mean = v.reduce((a, b) => a + b, 0) / n;
+  if (n < 2) return { n, mean, std: null, max: v[0], min: v[0] };
+  const variance = v.reduce((acc, x) => acc + (x - mean) ** 2, 0) / (n - 1);
+  return { n, mean, std: Math.sqrt(variance), max: Math.max(...v), min: Math.min(...v) };
+}
+function calc(d) {
+  const s = stats(d.data);
+  const T = (isNaN(d.upper) || isNaN(d.lower)) ? null : d.upper - d.lower;
+  const Tc = (isNaN(d.upper) || isNaN(d.lower)) ? null : (d.upper + d.lower) / 2;
+  if (s.n < 2 || s.std === null || s.std === 0 || T === null) {
+    return { ...s, T, Tc, Cp: null, CpkU: null, CpkL: null, Cpk: null };
+  }
+  const Cp = T / (6 * s.std);
+  const CpkU = (d.upper - s.mean) / (3 * s.std);
+  const CpkL = (s.mean - d.lower) / (3 * s.std);
+  return { ...s, T, Tc, Cp, CpkU, CpkL, Cpk: Math.min(CpkU, CpkL) };
+}
+const fmt = (v, p = 3) => (v === null || v === undefined || isNaN(v)) ? '—' : v.toFixed(p);
+function cpkBadge(v) {
+  if (v === null || isNaN(v)) return '';
+  if (v >= 1.67) return ` <span class="badge badge-good">${t('badgeExcellent')}</span>`;
+  if (v >= 1.33) return ` <span class="badge badge-good">${t('badgeCapable')}</span>`;
+  if (v >= 1.00) return ` <span class="badge badge-warn">${t('badgeAdequate')}</span>`;
+  return ` <span class="badge badge-bad">${t('badgeBad')}</span>`;
+}
+
+/* ============================================================
+   RENDER: PER-DATASET TABLE (Section 02)
+   ============================================================ */
+function renderDsTable() {
+  const table = document.getElementById('dsTable');
+  const N = state.datasets.length;
+  const canRemove = N > MIN_DATASETS;
+
+  // Sync USL/LSL across all datasets from ds[0] before rendering
+  if (state.datasets.length > 0) {
+    const u = state.datasets[0].upper;
+    const l = state.datasets[0].lower;
+    state.datasets.forEach((d, i) => {
+      if (i === 0) return;
+      d.upper = u;
+      d.lower = l;
+    });
+  }
+
+  // Build header row
+  let thead = '<thead><tr><th></th>';
+  state.datasets.forEach((d, i) => {
+    thead += `<th class="ds-col-header" style="background:${d.color};">
+      <input type="text" data-ds="${i}" data-fld="name" value="${escapeHtml(d.name)}" placeholder="—">
+      ${canRemove ? `<div class="col-actions"><button class="col-x-btn" data-remove-ds="${i}" title="Remove">×</button></div>` : ''}
+    </th>`;
+  });
+  thead += '</tr></thead>';
+
+  const rows = [
+    { fld: 'mc', label: t('rowMC'), type: 'text' },
+    { fld: 'date', label: t('rowDate'), type: 'date' },
+    { fld: 'checker', label: t('rowChecker'), type: 'text' },
+    { fld: 'tool', label: t('rowTool'), type: 'text' },
+    { fld: 'condition', label: t('rowCondition'), type: 'text' },
+    { fld: 'upper', label: t('rowUSL'), type: 'number', shared: true },
+    { fld: 'lower', label: t('rowLSL'), type: 'number', shared: true },
+    { fld: 'T', label: t('rowT'), type: 'computed', formula: '= USL − LSL' },
+    { fld: 'Tc', label: t('rowTc'), type: 'computed', formula: '= (USL + LSL) / 2' },
+  ];
+
+  let tbody = '<tbody>';
+  rows.forEach(r => {
+    const lblExtra = r.formula ? ' <span class="formula">' + r.formula + '</span>'
+                  : (r.shared ? '<span class="synced-hint">' + t('rowSyncedFromFirst') + '</span>' : '');
+    tbody += `<tr><td class="label-cell">${r.label}${lblExtra}</td>`;
+    state.datasets.forEach((d, i) => {
+      if (r.type === 'computed') {
+        const c = calc(d);
+        tbody += `<td class="computed mono" data-computed="${r.fld}" data-ds="${i}">${fmt(c[r.fld])}</td>`;
+      } else if (r.type === 'number') {
+        const locked = r.shared && i > 0;
+        const val = d[r.fld] ?? '';
+        const cls = locked ? ' class="synced-locked"' : '';
+        const dis = locked ? ' disabled' : '';
+        tbody += `<td><input type="number" step="any" data-ds="${i}" data-fld="${r.fld}" value="${val}"${cls}${dis}></td>`;
+      } else if (r.type === 'date') {
+        tbody += `<td><input type="date" data-ds="${i}" data-fld="${r.fld}" value="${d[r.fld] || ''}"></td>`;
+      } else {
+        tbody += `<td><input type="text" data-ds="${i}" data-fld="${r.fld}" value="${escapeHtml(d[r.fld] || '')}" placeholder="—"></td>`;
+      }
+    });
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  table.innerHTML = thead + tbody;
+
+  // Bind input events
+  table.querySelectorAll('input:not([disabled])').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const i = +e.target.dataset.ds;
+      const f = e.target.dataset.fld;
+      let v = e.target.value;
+      if (e.target.type === 'number') {
+        v = v === '' ? NaN : parseFloat(v);
+      }
+      state.datasets[i][f] = v;
+      // If the changed field is upper/lower (only allowed on ds 0), sync to all datasets
+      if ((f === 'upper' || f === 'lower') && i === 0) {
+        state.datasets.forEach((d, k) => { if (k > 0) d[f] = v; });
+        // Update mirrored locked inputs visually
+        table.querySelectorAll(`input[data-fld="${f}"].synced-locked`).forEach(mi => {
+          mi.value = (isNaN(v) || v === '') ? '' : v;
+        });
+        // Update computed T/Tc on all rows
+        state.datasets.forEach((_, k) => {
+          table.querySelectorAll(`[data-computed][data-ds="${k}"]`).forEach(c => {
+            c.textContent = fmt(calc(state.datasets[k])[c.dataset.computed]);
+          });
+        });
+      } else {
+        // Update computed cells on this dataset only
+        table.querySelectorAll(`[data-computed][data-ds="${i}"]`).forEach(c => {
+          c.textContent = fmt(calc(state.datasets[i])[c.dataset.computed]);
+        });
+      }
+      onStateChange({ skipDsTable: true });
+    });
+  });
+  // Remove dataset buttons
+  table.querySelectorAll('[data-remove-ds]').forEach(b => {
+    b.addEventListener('click', () => {
+      if (state.datasets.length <= MIN_DATASETS) return;
+      if (!confirm(t('confirmRemoveDs'))) return;
+      const i = +b.dataset.removeDs;
+      state.datasets.splice(i, 1);
+      // Reset spacing if outdated
+      if (state.ui.spacing && state.ui.spacing.length !== state.datasets.length) state.ui.spacing = null;
+      onStateChange();
+    });
+  });
+
+  // Counter
+  document.getElementById('dsCounter').textContent = `${N} / ${MAX_DATASETS}`;
+  document.getElementById('addDsBtn').disabled = N >= MAX_DATASETS;
+  document.getElementById('addDsBtn').style.opacity = N >= MAX_DATASETS ? 0.4 : 1;
+}
+
+/* ============================================================
+   RENDER: DATA GRID (Section 03)
+   ============================================================ */
+function renderDataGrid() {
+  const grid = document.getElementById('dataGrid');
+  const N = state.datasets.length;
+  grid.style.gridTemplateColumns = `56px repeat(${N}, minmax(130px, 1fr))`;
+  grid.innerHTML = '';
+
+  // Header row
+  const h0 = document.createElement('div');
+  h0.className = 'cell data-header';
+  h0.textContent = '№';
+  grid.appendChild(h0);
+  state.datasets.forEach((d, i) => {
+    const h = document.createElement('div');
+    h.className = 'cell data-header' + (i === N - 1 ? ' last-col' : '');
+    h.innerHTML = `<span class="swatch" style="background:${d.color}"></span><span>${escapeHtml(d.name)}</span>`;
+    grid.appendChild(h);
+  });
+
+  // 30 rows
+  for (let r = 0; r < MAX_ROWS; r++) {
+    const isLastRow = r === MAX_ROWS - 1;
+    const num = document.createElement('div');
+    num.className = 'cell data-num' + (isLastRow ? ' last-row' : '');
+    num.textContent = String(r + 1).padStart(2, '0');
+    grid.appendChild(num);
+
+    state.datasets.forEach((d, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell data-cell' + (i === N - 1 ? ' last-col' : '') + (isLastRow ? ' last-row' : '');
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.inputMode = 'decimal';
+      inp.value = d.data[r] === null ? '' : d.data[r];
+      inp.dataset.ds = i;
+      inp.dataset.idx = r;
+      inp.placeholder = '—';
+
+      inp.addEventListener('input', e => {
+        const raw = e.target.value.trim().replace(',', '.');
+        if (raw === '') {
+          state.datasets[i].data[r] = null;
+        } else {
+          const num = parseFloat(raw);
+          state.datasets[i].data[r] = isNaN(num) ? null : num;
+        }
+        onStateChange({ skipDataGrid: true, skipDsTable: true });
+      });
+
+      // Paste support
+      inp.addEventListener('paste', e => {
+        const text = (e.clipboardData || window.clipboardData).getData('text');
+        const tokens = text.split(/[\s,;\t\n\r]+/).map(s => s.trim()).filter(Boolean);
+        if (tokens.length <= 1) return;
+        e.preventDefault();
+        let pos = r;
+        for (const tk of tokens) {
+          if (pos >= MAX_ROWS) break;
+          const num = parseFloat(tk.replace(',', '.'));
+          state.datasets[i].data[pos] = isNaN(num) ? null : num;
+          pos++;
+        }
+        onStateChange();
+        setTimeout(() => {
+          const next = grid.querySelector(`input[data-ds="${i}"][data-idx="${Math.min(pos, MAX_ROWS - 1)}"]`);
+          if (next) next.focus();
+        }, 0);
+      });
+
+      // Keyboard nav
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const next = grid.querySelector(`input[data-ds="${i}"][data-idx="${r + 1}"]`);
+          if (next) next.focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prev = grid.querySelector(`input[data-ds="${i}"][data-idx="${r - 1}"]`);
+          if (prev) prev.focus();
+        } else if (e.key === 'ArrowRight' && e.target.selectionStart === e.target.value.length) {
+          if (i < N - 1) {
+            e.preventDefault();
+            const right = grid.querySelector(`input[data-ds="${i + 1}"][data-idx="${r}"]`);
+            if (right) right.focus();
+          }
+        } else if (e.key === 'ArrowLeft' && e.target.selectionStart === 0) {
+          if (i > 0) {
+            e.preventDefault();
+            const left = grid.querySelector(`input[data-ds="${i - 1}"][data-idx="${r}"]`);
+            if (left) left.focus();
+          }
+        }
+      });
+
+      cell.appendChild(inp);
+      grid.appendChild(cell);
+    });
+  }
+}
+
+/* ============================================================
+   RENDER: STATISTICS GRID (Section 04)
+   ============================================================ */
+function renderStats() {
+  const grid = document.getElementById('statsGrid');
+  const N = state.datasets.length;
+  grid.style.gridTemplateColumns = `280px repeat(${N}, minmax(130px, 1fr))`;
+  grid.innerHTML = '';
+
+  // Header
+  const h0 = document.createElement('div');
+  h0.className = 'cell empty-corner';
+  grid.appendChild(h0);
+  state.datasets.forEach((d, i) => {
+    const h = document.createElement('div');
+    h.className = 'cell stat-header' + (i === N - 1 ? ' last-col' : '');
+    h.style.background = d.color;
+    h.textContent = d.name;
+    grid.appendChild(h);
+  });
+
+  const rows = [
+    { key: 'n', label: 'n', formula: t('statN'), p: 0 },
+    { key: 'mean', label: 'X̄', formula: t('statMean'), p: 3 },
+    { key: 'std', label: 'σₙ₋₁', formula: t('statStd'), p: 3 },
+    { key: 'Cp', label: 'Cp', formula: t('statCp'), p: 3 },
+    { key: 'CpkU', label: 'Cpk(upper)', formula: t('statCpkU'), p: 3 },
+    { key: 'CpkL', label: 'Cpk(lower)', formula: t('statCpkL'), p: 3 },
+    { key: 'Cpk', label: 'Cpk', formula: t('statCpkMin'), p: 3, highlight: true },
+    { key: 'max', label: 'Max', formula: t('statMax'), p: 3 },
+    { key: 'min', label: 'Min', formula: t('statMin'), p: 3 },
+  ];
+
+  rows.forEach((r, ri) => {
+    const isLastRow = ri === rows.length - 1;
+    const lbl = document.createElement('div');
+    lbl.className = 'cell stat-label' + (isLastRow ? ' last-row' : '');
+    if (r.highlight) {
+      lbl.classList.add('cpk-row');
+      lbl.classList.add('stat-label-cpk');
+    }
+    lbl.innerHTML = `<span>${r.label}</span><span class="formula">${r.formula}</span>`;
+    grid.appendChild(lbl);
+
+    state.datasets.forEach((d, i) => {
+      const c = calc(d);
+      const v = c[r.key];
+      const cell = document.createElement('div');
+      cell.className = 'cell stat-value' + (i === N - 1 ? ' last-col' : '') + (isLastRow ? ' last-row' : '');
+      if (r.highlight) {
+        cell.classList.add('cpk-row', 'stat-value-cpk');
+      }
+      cell.innerHTML = fmt(v, r.p) + (r.key === 'Cpk' ? cpkBadge(v) : '');
+      grid.appendChild(cell);
+    });
+  });
+}
+
+/* ============================================================
+   RENDER: DS STYLE ROW (color + marker per dataset)
+   ============================================================ */
+function renderDsStyleRow() {
+  const row = document.getElementById('dsStyleRow');
+  row.innerHTML = '';
+  state.datasets.forEach((d, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'ds-style-chip';
+    chip.innerHTML = `
+      <span class="chip-name" style="color:${d.color}">${escapeHtml(d.name)}</span>
+      <input type="color" data-ds="${i}" data-fld="color" value="${d.color}" title="Color">
+      <select data-ds="${i}" data-fld="marker" title="Marker">
+        ${MARKER_SHAPES.map(s => `<option value="${s}" ${d.marker === s ? 'selected' : ''}>${s}</option>`).join('')}
+      </select>
+    `;
+    row.appendChild(chip);
+  });
+  row.querySelectorAll('input[type="color"], select').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = +e.target.dataset.ds;
+      const f = e.target.dataset.fld;
+      state.datasets[i][f] = e.target.value;
+      onStateChange();
+    });
+  });
+}
+
+/* ============================================================
+   CAPABILITY CHART (SVG, vertical + horizontal, draggable)
+   ============================================================ */
+function getSpacing() {
+  const N = state.datasets.length;
+  if (state.ui.spacing && state.ui.spacing.length === N) {
+    return state.ui.spacing.slice();
+  }
+  // Auto-distribute: equal spacing in [0.1, 0.9]
+  if (N === 1) return [0.5];
+  const positions = [];
+  const start = 0.15, end = 0.85;
+  for (let i = 0; i < N; i++) {
+    positions.push(start + (end - start) * i / (N - 1));
+  }
+  return positions;
+}
+
+function svgEl(tag, attrs, text) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const e = document.createElementNS(ns, tag);
+  for (const k in attrs) {
+    if (attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]);
+  }
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function markerPath(shape, cx, cy, size, color) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const r = size;
+  if (shape === 'circle') {
+    return svgEl('circle', { cx, cy, r, fill: color, stroke: 'white', 'stroke-width': 2 });
+  }
+  if (shape === 'square') {
+    return svgEl('rect', { x: cx - r, y: cy - r, width: r * 2, height: r * 2, fill: color, stroke: 'white', 'stroke-width': 2 });
+  }
+  if (shape === 'triangle') {
+    const pts = `${cx},${cy - r * 1.15} ${cx - r * 1.05},${cy + r * 0.85} ${cx + r * 1.05},${cy + r * 0.85}`;
+    return svgEl('polygon', { points: pts, fill: color, stroke: 'white', 'stroke-width': 2 });
+  }
+  if (shape === 'diamond') {
+    const pts = `${cx},${cy - r * 1.15} ${cx + r * 1.15},${cy} ${cx},${cy + r * 1.15} ${cx - r * 1.15},${cy}`;
+    return svgEl('polygon', { points: pts, fill: color, stroke: 'white', 'stroke-width': 2 });
+  }
+  if (shape === 'star') {
+    let pts = '';
+    for (let i = 0; i < 10; i++) {
+      const ang = (Math.PI / 5) * i - Math.PI / 2;
+      const rad = i % 2 === 0 ? r * 1.3 : r * 0.55;
+      pts += `${cx + Math.cos(ang) * rad},${cy + Math.sin(ang) * rad} `;
+    }
+    return svgEl('polygon', { points: pts.trim(), fill: color, stroke: 'white', 'stroke-width': 1.5 });
+  }
+  if (shape === 'cross') {
+    const t = r * 0.4;
+    const pts = `${cx - t},${cy - r} ${cx + t},${cy - r} ${cx + t},${cy - t} ${cx + r},${cy - t} ${cx + r},${cy + t} ${cx + t},${cy + t} ${cx + t},${cy + r} ${cx - t},${cy + r} ${cx - t},${cy + t} ${cx - r},${cy + t} ${cx - r},${cy - t} ${cx - t},${cy - t}`;
+    return svgEl('polygon', { points: pts, fill: color, stroke: 'white', 'stroke-width': 1.5 });
+  }
+  return svgEl('circle', { cx, cy, r, fill: color });
+}
+
+
+function getCapPaddings() {
+  const isVertical = state.ui.capOrient === 'vertical';
+  return {
+    isVertical,
+    W: state.ui.capWidth || 600,
+    H: state.ui.capHeight || (isVertical ? 480 : 380),
+    padTop: isVertical ? 50 : 40,
+    padBot: isVertical ? 44 : 70,
+    padL: 80,
+    padR: 80
+  };
+}
+
+function drawCapChart() {
+  const svg = document.getElementById('capChart');
+  if (!svg) return;
+  svg.innerHTML = '';
+  svg.classList.toggle('horizontal', state.ui.capOrient === 'horizontal');
+
+  const { isVertical, W, H, padTop, padBot, padL, padR } = getCapPaddings();
+  const fontSize = state.ui.capFont;
+  const decimals = state.ui.capDecimals;
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+  const plotW = W - padL - padR;
+  const plotH = H - padTop - padBot;
+
+  // Compute data range
+  const allVals = [];
+  state.datasets.forEach(d => {
+    if (!isNaN(d.upper)) allVals.push(d.upper);
+    if (!isNaN(d.lower)) allVals.push(d.lower);
+    d.data.forEach(v => { if (v !== null && !isNaN(v)) allVals.push(v); });
+  });
+  if (allVals.length < 2) {
+    svg.appendChild(svgEl('text', {
+      x: W / 2, y: H / 2, 'text-anchor': 'middle',
+      'font-family': 'IBM Plex Sans', 'font-size': 12, fill: '#999'
+    }, 'Set spec limits to draw'));
+    return;
+  }
+
+  const valMax = Math.max(...allVals);
+  const valMin = Math.min(...allVals);
+  const range = valMax - valMin || 1;
+  const valTop = valMax + range * 0.18;
+  const valBot = valMin - range * 0.18;
+
+  // Plot frame
+  svg.appendChild(svgEl('rect', {
+    x: padL, y: padTop, width: plotW, height: plotH,
+    fill: '#FAFAF7', stroke: '#E8E4D8', 'stroke-width': 1
+  }));
+
+  // Map value -> coord
+  const valToCoord = isVertical
+    ? v => padTop + (valTop - v) / (valTop - valBot) * plotH
+    : v => padL + (v - valBot) / (valTop - valBot) * plotW;
+
+  // Tick lines on value axis
+  const ticks = 6;
+  for (let i = 0; i <= ticks; i++) {
+    const v = valBot + (valTop - valBot) * i / ticks;
+    if (isVertical) {
+      const y = valToCoord(v);
+      svg.appendChild(svgEl('line', { x1: padL, x2: padL + plotW, y1: y, y2: y, stroke: '#EFEBE0', 'stroke-width': 1 }));
+      svg.appendChild(svgEl('text', {
+        x: padL - 8, y: y + 3, 'text-anchor': 'end',
+        'font-family': 'IBM Plex Mono', 'font-size': fontSize - 2, fill: '#999486'
+      }, v.toFixed(2)));
+    } else {
+      const x = valToCoord(v);
+      svg.appendChild(svgEl('line', { x1: x, x2: x, y1: padTop, y2: padTop + plotH, stroke: '#EFEBE0', 'stroke-width': 1 }));
+      svg.appendChild(svgEl('text', {
+        x: x, y: padTop + plotH + 14, 'text-anchor': 'middle',
+        'font-family': 'IBM Plex Mono', 'font-size': fontSize - 2, fill: '#999486'
+      }, v.toFixed(2)));
+    }
+  }
+
+  // Dataset positions along the cross axis
+  const spacing = getSpacing();
+  const dsCoord = (i) => {
+    const t = spacing[i];
+    return isVertical
+      ? padL + plotW * t      // x position
+      : padTop + plotH * t;   // y position
+  };
+
+  // Draw datasets
+  state.datasets.forEach((d, i) => {
+    const c = calc(d);
+    const dpos = dsCoord(i);
+
+    // Wrap each dataset's visuals in a draggable group
+    const dsG = svgEl('g', { class: 'draggable-handle', 'data-ds-handle': i });
+    dsG.style.cursor = isVertical ? 'ew-resize' : 'ns-resize';
+
+    // Invisible hit rect along guideline (so users can drag even with no data)
+    if (isVertical) {
+      dsG.appendChild(svgEl('rect', {
+        x: dpos - 9, y: padTop + 4, width: 18, height: plotH - 8,
+        fill: 'rgba(0,0,0,0)', stroke: 'none'
+      }));
+    } else {
+      dsG.appendChild(svgEl('rect', {
+        x: padL + 4, y: dpos - 9, width: plotW - 8, height: 18,
+        fill: 'rgba(0,0,0,0)', stroke: 'none'
+      }));
+    }
+
+    // Guideline (cross-axis dashed)
+    if (isVertical) {
+      dsG.appendChild(svgEl('line', {
+        x1: dpos, x2: dpos, y1: padTop + 6, y2: padTop + plotH - 6,
+        stroke: '#E0DCD0', 'stroke-width': 1, 'stroke-dasharray': '2 4'
+      }));
+    } else {
+      dsG.appendChild(svgEl('line', {
+        x1: padL + 6, x2: padL + plotW - 6, y1: dpos, y2: dpos,
+        stroke: '#E0DCD0', 'stroke-width': 1, 'stroke-dasharray': '2 4'
+      }));
+    }
+
+    // Data range marker (Min — X̄ — Max)
+    if (c.n >= 1 && c.max !== null) {
+      const cMax = valToCoord(c.max);
+      const cMin = valToCoord(c.min);
+      const cAvg = (c.mean !== null) ? valToCoord(c.mean) : null;
+      const cpkText = (c.Cpk !== null && !isNaN(c.Cpk))
+        ? `Cpk : ${c.Cpk.toFixed(decimals)}`
+        : 'Cpk : —';
+
+      if (isVertical) {
+        // Vertical bar Min..Max at x=dpos
+        if (state.ui.showMax || state.ui.showMin) {
+          dsG.appendChild(svgEl('line', {
+            x1: dpos, x2: dpos, y1: cMin, y2: cMax,
+            stroke: d.color, 'stroke-width': 4, 'stroke-linecap': 'round'
+          }));
+        }
+        if (state.ui.showMax) {
+          dsG.appendChild(svgEl('line', {
+            x1: dpos - 14, x2: dpos + 14, y1: cMax, y2: cMax,
+            stroke: d.color, 'stroke-width': 3, 'stroke-linecap': 'round'
+          }));
+          dsG.appendChild(svgEl('text', {
+            x: dpos - 22, y: cMax + 4, 'text-anchor': 'end',
+            'font-family': 'IBM Plex Mono', 'font-size': fontSize,
+            fill: d.color, 'font-weight': 600
+          }, c.max.toFixed(decimals)));
+        }
+        if (state.ui.showMin) {
+          dsG.appendChild(svgEl('line', {
+            x1: dpos - 14, x2: dpos + 14, y1: cMin, y2: cMin,
+            stroke: d.color, 'stroke-width': 3, 'stroke-linecap': 'round'
+          }));
+          dsG.appendChild(svgEl('text', {
+            x: dpos - 22, y: cMin + 4, 'text-anchor': 'end',
+            'font-family': 'IBM Plex Mono', 'font-size': fontSize,
+            fill: d.color, 'font-weight': 600
+          }, c.min.toFixed(decimals)));
+        }
+        if (state.ui.showAvg && cAvg !== null) {
+          dsG.appendChild(markerPath(d.marker, dpos, cAvg, 8, d.color));
+          dsG.appendChild(svgEl('text', {
+            x: dpos + 18, y: cAvg + 4,
+            'font-family': 'IBM Plex Mono', 'font-size': fontSize,
+            fill: d.color, 'font-weight': 700
+          }, `X̄ ${c.mean.toFixed(decimals)}`));
+        }
+      } else {
+        // Horizontal bar Min..Max at y=dpos
+        if (state.ui.showMax || state.ui.showMin) {
+          dsG.appendChild(svgEl('line', {
+            x1: cMin, x2: cMax, y1: dpos, y2: dpos,
+            stroke: d.color, 'stroke-width': 4, 'stroke-linecap': 'round'
+          }));
+        }
+        if (state.ui.showMax) {
+          dsG.appendChild(svgEl('line', {
+            x1: cMax, x2: cMax, y1: dpos - 14, y2: dpos + 14,
+            stroke: d.color, 'stroke-width': 3, 'stroke-linecap': 'round'
+          }));
+          dsG.appendChild(svgEl('text', {
+            x: cMax, y: dpos + 26, 'text-anchor': 'middle',
+            'font-family': 'IBM Plex Mono', 'font-size': fontSize,
+            fill: d.color, 'font-weight': 600
+          }, c.max.toFixed(decimals)));
+        }
+        if (state.ui.showMin) {
+          dsG.appendChild(svgEl('line', {
+            x1: cMin, x2: cMin, y1: dpos - 14, y2: dpos + 14,
+            stroke: d.color, 'stroke-width': 3, 'stroke-linecap': 'round'
+          }));
+          dsG.appendChild(svgEl('text', {
+            x: cMin, y: dpos + 26, 'text-anchor': 'middle',
+            'font-family': 'IBM Plex Mono', 'font-size': fontSize,
+            fill: d.color, 'font-weight': 600
+          }, c.min.toFixed(decimals)));
+        }
+        if (state.ui.showAvg && cAvg !== null) {
+          dsG.appendChild(markerPath(d.marker, cAvg, dpos, 8, d.color));
+          dsG.appendChild(svgEl('text', {
+            x: cAvg, y: dpos - 14, 'text-anchor': 'middle',
+            'font-family': 'IBM Plex Mono', 'font-size': fontSize,
+            fill: d.color, 'font-weight': 700
+          }, `X̄ ${c.mean.toFixed(decimals)}`));
+        }
+      }
+    }
+
+    svg.appendChild(dsG);
+
+    // ===== Cpk label — independent draggable group (separate from dataset's drag group) =====
+    if (c.n >= 1 && c.max !== null) {
+      const cMin = valToCoord(c.min);
+      const cpkText = (c.Cpk !== null && !isNaN(c.Cpk))
+        ? `Cpk : ${c.Cpk.toFixed(decimals)}`
+        : 'Cpk : —';
+
+      // Default base position (anchor for offset)
+      let baseX, baseY, anchor;
+      if (isVertical) {
+        // Below Min: a bit lower than the Min text
+        baseX = dpos;
+        baseY = cMin + fontSize + 14;
+        anchor = 'middle';
+      } else {
+        // Below Min text in horizontal mode
+        baseX = valToCoord(c.min);
+        baseY = dpos + 26 + fontSize + 8;
+        anchor = 'middle';
+      }
+      const off = d.cpkOffset || { dx: 0, dy: 0 };
+      const cx = baseX + off.dx;
+      const cy = baseY + off.dy;
+
+      const cpkG = svgEl('g', {
+        class: 'cpk-handle',
+        'data-cpk-handle': i
+      });
+      cpkG.style.cursor = 'grab';
+      // Background rect for hit area + visual halo
+      const padX = 6, padY = 4;
+      const approxW = (cpkText.length * fontSize * 0.58) + padX * 2;
+      const approxH = fontSize + padY * 2;
+      cpkG.appendChild(svgEl('rect', {
+        x: cx - approxW / 2, y: cy - fontSize, width: approxW, height: approxH,
+        fill: 'transparent'
+      }));
+      cpkG.appendChild(svgEl('text', {
+        x: cx, y: cy, 'text-anchor': anchor,
+        'font-family': 'IBM Plex Mono', 'font-size': fontSize,
+        fill: c.Cpk !== null ? d.color : '#AAA', 'font-weight': 700
+      }, cpkText));
+      svg.appendChild(cpkG);
+    }
+  });
+
+  // ===== Global USL/LSL spec lines (single line, drawn once, label drag-able) =====
+  const ds0 = state.datasets[0];
+  const geom = { isVertical, plotL: padL, plotT: padTop, plotW, plotH, valToCoord };
+  if (ds0 && !isNaN(ds0.upper)) {
+    drawGlobalSpec(svg, geom, ds0.upper, 'USL', true, fontSize, decimals, state.ui.uslLabelFrac);
+  }
+  if (ds0 && !isNaN(ds0.lower)) {
+    drawGlobalSpec(svg, geom, ds0.lower, 'LSL', false, fontSize, decimals, state.ui.lslLabelFrac);
+  }
+
+  // ===== Legend at bottom =====
+  drawCapLegend(svg, W, H, fontSize);
+}
+
+function drawCapLegend(svg, W, H, fontSize) {
+  const legendY = H - 14;
+  const itemGap = 22;
+  const swatchR = Math.max(4, Math.round(fontSize * 0.45));
+  const items = state.datasets.map(d => {
+    const displayName = (d.name || '').length > 20 ? (d.name.slice(0, 19) + '…') : (d.name || '');
+    const textW = displayName.length * (fontSize * 0.58);
+    return { d, displayName, w: swatchR * 2 + 6 + textW };
+  });
+  const totalW = items.reduce((acc, it) => acc + it.w, 0) + itemGap * Math.max(0, items.length - 1);
+  let cursorX = Math.max(20, (W - totalW) / 2);
+  items.forEach(({ d, displayName, w }) => {
+    const cy = legendY - Math.round(fontSize * 0.32);
+    svg.appendChild(markerPath(d.marker, cursorX + swatchR, cy, swatchR, d.color));
+    svg.appendChild(svgEl('text', {
+      x: cursorX + swatchR * 2 + 6, y: legendY,
+      'font-family': 'IBM Plex Sans', 'font-size': fontSize,
+      fill: d.color, 'font-weight': 600
+    }, displayName));
+    cursorX += w + itemGap;
+  });
+}
+
+/**
+ * Draw a SINGLE long spec line spanning the entire plot,
+ * with a draggable label group (3 slashes + label + value) at labelFrac along the line.
+ */
+function drawGlobalSpec(svg, geom, value, label, isUpper, fontSize, decimals, labelFrac) {
+  if (value === null || isNaN(value)) return;
+  const { isVertical, plotL, plotT, plotW, plotH, valToCoord } = geom;
+  const lf = Math.max(0.04, Math.min(0.96, labelFrac));
+  const sw = state.ui.capSpecWidth || 2;
+  const slashSw = Math.max(1.5, sw);
+  const slashLen = state.ui.specSlashLen ?? 10;
+  const slashOffset = state.ui.specSlashOffset ?? 4;
+  const angle = ((state.ui.specSlashAngle ?? 30) * Math.PI) / 180;
+
+  if (isVertical) {
+    // Horizontal red line spanning full plot width
+    const y = valToCoord(value);
+    svg.appendChild(svgEl('line', {
+      x1: plotL, x2: plotL + plotW, y1: y, y2: y,
+      stroke: '#D2232A', 'stroke-width': sw, 'stroke-linecap': 'round'
+    }));
+
+    // Draggable label group at labelFrac along the line
+    const labelX = plotL + plotW * lf;
+    const g = svgEl('g', {
+      class: 'label-handle',
+      'data-label-handle': isUpper ? 'usl' : 'lsl'
+    });
+
+    // 3 parallel slashes extending outward (up for USL, down for LSL)
+    const verticalDir = isUpper ? -1 : 1;
+    for (let k = 0; k < 3; k++) {
+      const ax = labelX - (k * slashOffset);
+      const ay = y;
+      const bx = ax + Math.cos(angle) * slashLen;
+      const by = ay + verticalDir * Math.sin(angle) * slashLen;
+      g.appendChild(svgEl('line', {
+        x1: ax, y1: ay, x2: bx, y2: by,
+        stroke: '#D2232A', 'stroke-width': slashSw, 'stroke-linecap': 'round'
+      }));
+    }
+    // Label text
+    const textY = isUpper ? (y - 6) : (y + fontSize + 6);
+    const valY  = isUpper ? (textY - fontSize - 1) : (textY + fontSize + 1);
+    g.appendChild(svgEl('text', {
+      x: labelX + 12, y: textY,
+      'font-family': 'IBM Plex Mono, monospace', 'font-size': fontSize,
+      fill: '#D2232A', 'font-weight': 700, 'letter-spacing': 0.5
+    }, label));
+    g.appendChild(svgEl('text', {
+      x: labelX + 12, y: valY,
+      'font-family': 'IBM Plex Mono, monospace', 'font-size': fontSize - 1,
+      fill: '#D2232A', 'font-weight': 500
+    }, value.toFixed(decimals)));
+
+    // Invisible hit rect
+    const hitH = fontSize * 2 + 12;
+    const hitX = labelX - 8;
+    const hitW = Math.max(60, label.length * (fontSize * 0.65) + 50);
+    const hitY = isUpper ? (y - hitH) : y;
+    g.appendChild(svgEl('rect', {
+      x: hitX, y: hitY, width: hitW, height: hitH,
+      fill: 'transparent', stroke: 'transparent'
+    }));
+    svg.appendChild(g);
+  } else {
+    // Horizontal orientation: vertical red line spanning full plot height
+    const x = valToCoord(value);
+    svg.appendChild(svgEl('line', {
+      x1: x, y1: plotT, x2: x, y2: plotT + plotH,
+      stroke: '#D2232A', 'stroke-width': sw, 'stroke-linecap': 'round'
+    }));
+
+    const labelY = plotT + plotH * lf;
+    const g = svgEl('g', {
+      class: 'label-handle',
+      'data-label-handle': isUpper ? 'usl' : 'lsl'
+    });
+
+    // 3 slashes
+    const horizontalDir = isUpper ? 1 : -1;
+    for (let k = 0; k < 3; k++) {
+      const ax = x;
+      const ay = labelY - (k * slashOffset);
+      const bx = ax + horizontalDir * Math.sin(angle) * slashLen;
+      const by = ay + Math.cos(angle) * slashLen;
+      g.appendChild(svgEl('line', {
+        x1: ax, y1: ay, x2: bx, y2: by,
+        stroke: '#D2232A', 'stroke-width': slashSw, 'stroke-linecap': 'round'
+      }));
+    }
+    const textX = isUpper ? (x + 14) : (x - 14);
+    const textAnchor = isUpper ? 'start' : 'end';
+    g.appendChild(svgEl('text', {
+      x: textX, y: labelY + 4, 'text-anchor': textAnchor,
+      'font-family': 'IBM Plex Mono, monospace', 'font-size': fontSize,
+      fill: '#D2232A', 'font-weight': 700, 'letter-spacing': 0.5
+    }, label));
+    g.appendChild(svgEl('text', {
+      x: textX, y: labelY + fontSize + 6, 'text-anchor': textAnchor,
+      'font-family': 'IBM Plex Mono, monospace', 'font-size': fontSize - 1,
+      fill: '#D2232A', 'font-weight': 500
+    }, value.toFixed(decimals)));
+
+    // Hit area
+    const hitW = 70;
+    const hitH = fontSize * 2 + 12;
+    const hitX = isUpper ? x : (x - hitW);
+    const hitY = labelY - 4;
+    g.appendChild(svgEl('rect', {
+      x: hitX, y: hitY, width: hitW, height: hitH,
+      fill: 'transparent', stroke: 'transparent'
+    }));
+    svg.appendChild(g);
+  }
+}
+
+function setupCapChartDrag() {
+  const svg = document.getElementById('capChart');
+  if (!svg) return;
+  let dragging = null;  // various kinds
+
+  svg.addEventListener('pointerdown', (e) => {
+    const cpkHandle = e.target.closest('[data-cpk-handle]');
+    const dsHandle = e.target.closest('[data-ds-handle]');
+    const labelHandle = e.target.closest('[data-label-handle]');
+    // Priority: cpk first (it sits on top of ds drag area visually)
+    if (cpkHandle) {
+      e.preventDefault();
+      const idx = +cpkHandle.dataset.cpkHandle;
+      // Convert pointer to SVG coords for stable delta tracking
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const ctm = svg.getScreenCTM();
+      const local = ctm ? pt.matrixTransform(ctm.inverse()) : { x: 0, y: 0 };
+      const cur = state.datasets[idx].cpkOffset || { dx: 0, dy: 0 };
+      dragging = {
+        kind: 'cpk', idx, el: cpkHandle,
+        startSvgX: local.x, startSvgY: local.y,
+        startDx: cur.dx, startDy: cur.dy
+      };
+      cpkHandle.classList.add('dragging');
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    } else if (dsHandle) {
+      e.preventDefault();
+      dragging = { kind: 'ds', idx: +dsHandle.dataset.dsHandle, el: dsHandle };
+      dsHandle.classList.add('dragging');
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    } else if (labelHandle) {
+      e.preventDefault();
+      const which = labelHandle.dataset.labelHandle; // 'usl' or 'lsl'
+      dragging = { kind: which, el: labelHandle };
+      labelHandle.classList.add('dragging');
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+  });
+
+  svg.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const { isVertical, W, H, padTop, padBot, padL, padR } = getCapPaddings();
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const local = pt.matrixTransform(ctm.inverse());
+
+    if (dragging.kind === 'cpk') {
+      const dx = dragging.startDx + (local.x - dragging.startSvgX);
+      const dy = dragging.startDy + (local.y - dragging.startSvgY);
+      state.datasets[dragging.idx].cpkOffset = { dx, dy };
+      drawCapChart();
+      return;
+    }
+
+    let frac;
+    if (isVertical) {
+      frac = (local.x - padL) / (W - padL - padR);
+    } else {
+      frac = (local.y - padTop) / (H - padTop - padBot);
+    }
+    frac = Math.max(0.05, Math.min(0.95, frac));
+
+    if (dragging.kind === 'ds') {
+      const sp = getSpacing();
+      sp[dragging.idx] = frac;
+      state.ui.spacing = sp;
+    } else if (dragging.kind === 'usl') {
+      state.ui.uslLabelFrac = frac;
+    } else if (dragging.kind === 'lsl') {
+      state.ui.lslLabelFrac = frac;
+    }
+    drawCapChart();
+  });
+
+  const endDrag = (e) => {
+    if (!dragging) return;
+    if (dragging.el) dragging.el.classList.remove('dragging');
+    dragging = null;
+    try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+    saveState();
+  };
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+}
+
+/* ============================================================
+   BELL CURVE / DISTRIBUTION VIEW
+   ============================================================ */
+function normalPdf(x, mean, std) {
+  if (std <= 0 || isNaN(std) || isNaN(mean)) return 0;
+  const z = (x - mean) / std;
+  return Math.exp(-0.5 * z * z) / (std * Math.sqrt(2 * Math.PI));
+}
+
+function getBellPaddings() {
+  const isVertical = state.ui.bellOrient === 'vertical';
+  return {
+    isVertical,
+    W: state.ui.bellWidth || 700,
+    H: state.ui.bellHeight || 420,
+    padTop: isVertical ? 30 : 30,
+    padBot: isVertical ? 50 : 60,
+    padL: isVertical ? 80 : 70,
+    padR: isVertical ? 100 : 80
+  };
+}
+
+function hexToRgba(hex, alpha) {
+  if (!hex || hex[0] !== '#') return `rgba(0,0,0,${alpha})`;
+  let h = hex.slice(1);
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  const r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function drawBellChart() {
+  const svg = document.getElementById('bellChart');
+  if (!svg) return;
+  svg.innerHTML = '';
+
+  const { isVertical, W, H, padTop, padBot, padL, padR } = getBellPaddings();
+  const fontSize = state.ui.bellFont;
+  const decimals = state.ui.bellDecimals;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.classList.toggle('horizontal', !isVertical);
+
+  const plotW = W - padL - padR;
+  const plotH = H - padTop - padBot;
+
+  // Compute statistics for each dataset
+  const ds0 = state.datasets[0];
+  const stats = state.datasets.map(d => {
+    const c = calc(d);
+    return { d, c };
+  }).filter(s => s.c.n >= 2 && s.c.std !== null && s.c.std > 0);
+
+  // Determine measurement-axis range: cover ±3.5σ (or ±4.5σ if 4σ enabled) for each dataset + spec lines
+  const sigmaPad = state.ui.bellShow4Sigma ? 4.5 : 3.5;
+  const measVals = [];
+  stats.forEach(({ c }) => {
+    measVals.push(c.mean - sigmaPad * c.std);
+    measVals.push(c.mean + sigmaPad * c.std);
+  });
+  if (ds0 && !isNaN(ds0.upper)) measVals.push(ds0.upper);
+  if (ds0 && !isNaN(ds0.lower)) measVals.push(ds0.lower);
+  // Also include actual data extremes for context
+  state.datasets.forEach(d => d.data.forEach(v => { if (v !== null && !isNaN(v)) measVals.push(v); }));
+
+  if (measVals.length < 2) {
+    svg.appendChild(svgEl('text', {
+      x: W / 2, y: H / 2, 'text-anchor': 'middle',
+      'font-family': 'IBM Plex Sans', 'font-size': 12, fill: '#999'
+    }, 'Need data to draw distribution'));
+    return;
+  }
+
+  let measMin = Math.min(...measVals);
+  let measMax = Math.max(...measVals);
+  const measRange = measMax - measMin || 1;
+  measMin -= measRange * 0.05;
+  measMax += measRange * 0.05;
+
+  // Determine PDF-axis range: max peak across all datasets
+  let pdfMax = 0;
+  stats.forEach(({ c }) => {
+    const peak = 1 / (c.std * Math.sqrt(2 * Math.PI));
+    if (peak > pdfMax) pdfMax = peak;
+  });
+  if (pdfMax === 0) pdfMax = 1;
+  const pdfTop = pdfMax * 1.18;
+
+  // Coordinate mappers
+  // Vertical: measurement on Y (descending downward), PDF on X (left-to-right)
+  // Horizontal: measurement on X (left-to-right), PDF on Y (ascending upward, so coord goes top-to-bottom inverted)
+  const measToCoord = isVertical
+    ? v => padTop + (measMax - v) / (measMax - measMin) * plotH        // y coord
+    : v => padL + (v - measMin) / (measMax - measMin) * plotW;          // x coord
+  const pdfToCoord = isVertical
+    ? p => padL + p / pdfTop * plotW                                    // x coord
+    : p => padTop + plotH - p / pdfTop * plotH;                         // y coord
+
+  // Plot frame
+  svg.appendChild(svgEl('rect', {
+    x: padL, y: padTop, width: plotW, height: plotH,
+    fill: '#FAFAF7', stroke: '#E8E4D8', 'stroke-width': 1
+  }));
+
+  // Tick lines + labels on measurement axis
+  const measTicks = 7;
+  for (let i = 0; i <= measTicks; i++) {
+    const v = measMin + (measMax - measMin) * i / measTicks;
+    if (isVertical) {
+      const y = measToCoord(v);
+      svg.appendChild(svgEl('line', {
+        x1: padL, x2: padL + plotW, y1: y, y2: y,
+        stroke: '#EFEBE0', 'stroke-width': 1
+      }));
+      svg.appendChild(svgEl('text', {
+        x: padL - 8, y: y + 3, 'text-anchor': 'end',
+        'font-family': 'IBM Plex Mono', 'font-size': fontSize - 2, fill: '#999486'
+      }, v.toFixed(decimals)));
+    } else {
+      const x = measToCoord(v);
+      svg.appendChild(svgEl('line', {
+        x1: x, x2: x, y1: padTop, y2: padTop + plotH,
+        stroke: '#EFEBE0', 'stroke-width': 1
+      }));
+      svg.appendChild(svgEl('text', {
+        x: x, y: padTop + plotH + 14, 'text-anchor': 'middle',
+        'font-family': 'IBM Plex Mono', 'font-size': fontSize - 2, fill: '#999486'
+      }, v.toFixed(decimals)));
+    }
+  }
+
+  // Axis labels
+  if (isVertical) {
+    svg.appendChild(svgEl('text', {
+      x: 16, y: padTop + plotH / 2,
+      'text-anchor': 'middle',
+      transform: `rotate(-90 16 ${padTop + plotH / 2})`,
+      'font-family': 'IBM Plex Sans', 'font-size': fontSize - 1,
+      fill: '#888376', 'letter-spacing': 0.06 + 'em'
+    }, 'Measurement'));
+    svg.appendChild(svgEl('text', {
+      x: padL + plotW / 2, y: H - 14,
+      'text-anchor': 'middle',
+      'font-family': 'IBM Plex Sans', 'font-size': fontSize - 1,
+      fill: '#888376'
+    }, 'Probability density'));
+  } else {
+    svg.appendChild(svgEl('text', {
+      x: padL + plotW / 2, y: H - 14,
+      'text-anchor': 'middle',
+      'font-family': 'IBM Plex Sans', 'font-size': fontSize - 1,
+      fill: '#888376'
+    }, 'Measurement'));
+    svg.appendChild(svgEl('text', {
+      x: 16, y: padTop + plotH / 2,
+      'text-anchor': 'middle',
+      transform: `rotate(-90 16 ${padTop + plotH / 2})`,
+      'font-family': 'IBM Plex Sans', 'font-size': fontSize - 1,
+      fill: '#888376'
+    }, 'Probability density'));
+  }
+
+  // Draw each bell curve
+  stats.forEach(({ d, c }) => {
+    const N = 121;
+    const lo = c.mean - sigmaPad * c.std;
+    const hi = c.mean + sigmaPad * c.std;
+    const points = [];
+    for (let i = 0; i <= N; i++) {
+      const v = lo + (hi - lo) * i / N;
+      // Clamp to plot range
+      if (v < measMin || v > measMax) continue;
+      const p = normalPdf(v, c.mean, c.std);
+      const cx = isVertical ? pdfToCoord(p) : measToCoord(v);
+      const cy = isVertical ? measToCoord(v) : pdfToCoord(p);
+      points.push([cx, cy]);
+    }
+    if (points.length < 2) return;
+
+    // Filled area: close back to baseline (PDF=0)
+    const baseFirst = isVertical
+      ? [pdfToCoord(0), points[0][1]]
+      : [points[0][0], pdfToCoord(0)];
+    const baseLast = isVertical
+      ? [pdfToCoord(0), points[points.length - 1][1]]
+      : [points[points.length - 1][0], pdfToCoord(0)];
+    const fillPath = [
+      `M ${baseFirst[0]} ${baseFirst[1]}`,
+      ...points.map(p => `L ${p[0]} ${p[1]}`),
+      `L ${baseLast[0]} ${baseLast[1]}`,
+      'Z'
+    ].join(' ');
+    svg.appendChild(svgEl('path', {
+      d: fillPath, fill: hexToRgba(d.color, 0.18), stroke: 'none'
+    }));
+    // Outline
+    const linePath = 'M ' + points.map(p => `${p[0]} ${p[1]}`).join(' L ');
+    svg.appendChild(svgEl('path', {
+      d: linePath, fill: 'none', stroke: d.color, 'stroke-width': 2, 'stroke-linejoin': 'round'
+    }));
+
+    // Mean line
+    if (state.ui.bellShowMean) {
+      const meanCoord = measToCoord(c.mean);
+      const peakPdf = 1 / (c.std * Math.sqrt(2 * Math.PI));
+      const peakCoord = pdfToCoord(peakPdf);
+      const baseCoord = pdfToCoord(0);
+      if (isVertical) {
+        svg.appendChild(svgEl('line', {
+          x1: baseCoord, x2: peakCoord, y1: meanCoord, y2: meanCoord,
+          stroke: d.color, 'stroke-width': 1.5, 'stroke-dasharray': '4 3'
+        }));
+        svg.appendChild(svgEl('text', {
+          x: peakCoord + 6, y: meanCoord + 4,
+          'font-family': 'IBM Plex Mono', 'font-size': fontSize - 1,
+          fill: d.color, 'font-weight': 600
+        }, `X̄ ${c.mean.toFixed(decimals)}`));
+      } else {
+        svg.appendChild(svgEl('line', {
+          x1: meanCoord, x2: meanCoord, y1: baseCoord, y2: peakCoord,
+          stroke: d.color, 'stroke-width': 1.5, 'stroke-dasharray': '4 3'
+        }));
+        svg.appendChild(svgEl('text', {
+          x: meanCoord, y: peakCoord - 6, 'text-anchor': 'middle',
+          'font-family': 'IBM Plex Mono', 'font-size': fontSize - 1,
+          fill: d.color, 'font-weight': 600
+        }, `X̄ ${c.mean.toFixed(decimals)}`));
+      }
+    }
+
+    // ±Kσ markers (3σ and/or 4σ depending on toggles)
+    const drawSigmaMark = (k, dashArray) => {
+      const sv = c.mean + k * c.std;
+      if (sv < measMin || sv > measMax) return;
+      const pp = normalPdf(sv, c.mean, c.std);
+      const a = isVertical ? pdfToCoord(0) : measToCoord(sv);
+      const b = isVertical ? measToCoord(sv) : pdfToCoord(0);
+      const e = isVertical ? pdfToCoord(pp) : measToCoord(sv);
+      const f = isVertical ? measToCoord(sv) : pdfToCoord(pp);
+      if (isVertical) {
+        svg.appendChild(svgEl('line', {
+          x1: a, x2: e, y1: b, y2: f,
+          stroke: d.color, 'stroke-width': 1, 'stroke-dasharray': dashArray, opacity: 0.7
+        }));
+        svg.appendChild(svgEl('text', {
+          x: e + 4, y: f + 3,
+          'font-family': 'IBM Plex Mono', 'font-size': fontSize - 3,
+          fill: d.color, opacity: 0.85
+        }, `${k > 0 ? '+' : ''}${k}σ`));
+      } else {
+        svg.appendChild(svgEl('line', {
+          x1: a, x2: e, y1: b, y2: f,
+          stroke: d.color, 'stroke-width': 1, 'stroke-dasharray': dashArray, opacity: 0.7
+        }));
+        svg.appendChild(svgEl('text', {
+          x: e, y: f - 4, 'text-anchor': 'middle',
+          'font-family': 'IBM Plex Mono', 'font-size': fontSize - 3,
+          fill: d.color, opacity: 0.85
+        }, `${k > 0 ? '+' : ''}${k}σ`));
+      }
+    };
+    if (state.ui.bellShow3Sigma) { drawSigmaMark(-3, '2 3'); drawSigmaMark(3, '2 3'); }
+    if (state.ui.bellShow4Sigma) { drawSigmaMark(-4, '1 3'); drawSigmaMark(4, '1 3'); }
+  });
+
+  // USL / LSL global spec lines
+  if (state.ui.bellShowSpec && ds0) {
+    const geom = { isVertical, plotL: padL, plotT: padTop, plotW, plotH, valToCoord: measToCoord };
+    if (!isNaN(ds0.upper)) {
+      drawBellSpec(svg, geom, ds0.upper, 'USL', true, fontSize, decimals, state.ui.bellUslLabelFrac);
+    }
+    if (!isNaN(ds0.lower)) {
+      drawBellSpec(svg, geom, ds0.lower, 'LSL', false, fontSize, decimals, state.ui.bellLslLabelFrac);
+    }
+  }
+
+  // Legend (dataset names with colored swatches)
+  const legX = padL + 12;
+  let legY = padTop + 12;
+  const swatchSize = fontSize - 2;
+  state.datasets.forEach((d, i) => {
+    if (i >= stats.length && stats.findIndex(s => s.d === d) === -1) return;
+    const g = svgEl('g', {});
+    g.appendChild(svgEl('rect', {
+      x: legX, y: legY - swatchSize + 1,
+      width: swatchSize, height: swatchSize,
+      fill: hexToRgba(d.color, 0.6), stroke: d.color, 'stroke-width': 1.5
+    }));
+    g.appendChild(svgEl('text', {
+      x: legX + swatchSize + 6, y: legY,
+      'font-family': 'IBM Plex Sans', 'font-size': fontSize,
+      fill: d.color, 'font-weight': 600
+    }, d.name));
+    svg.appendChild(g);
+    legY += fontSize + 6;
+  });
+}
+
+/**
+ * Bell-chart variant of drawGlobalSpec. Same look-and-feel but uses bell-specific label-frac fields.
+ */
+function drawBellSpec(svg, geom, value, label, isUpper, fontSize, decimals, labelFrac) {
+  if (value === null || isNaN(value)) return;
+  const { isVertical, plotL, plotT, plotW, plotH, valToCoord } = geom;
+  const lf = Math.max(0.04, Math.min(0.96, labelFrac));
+  const sw = state.ui.bellSpecWidth || 2;
+  const slashSw = Math.max(1.5, sw);
+  const slashLen = state.ui.specSlashLen ?? 10;
+  const slashOffset = state.ui.specSlashOffset ?? 4;
+  const angle = ((state.ui.specSlashAngle ?? 30) * Math.PI) / 180;
+
+  if (isVertical) {
+    // Vertical orientation: measurement on Y, so spec line is HORIZONTAL across the plot
+    const y = valToCoord(value);
+    svg.appendChild(svgEl('line', {
+      x1: plotL, x2: plotL + plotW, y1: y, y2: y,
+      stroke: '#D2232A', 'stroke-width': sw, 'stroke-linecap': 'round'
+    }));
+    const labelX = plotL + plotW * lf;
+    const g = svgEl('g', { class: 'label-handle', 'data-bell-label-handle': isUpper ? 'usl' : 'lsl' });
+    const verticalDir = isUpper ? -1 : 1;
+    for (let k = 0; k < 3; k++) {
+      const ax = labelX - (k * slashOffset);
+      const ay = y;
+      const bx = ax + Math.cos(angle) * slashLen;
+      const by = ay + verticalDir * Math.sin(angle) * slashLen;
+      g.appendChild(svgEl('line', { x1: ax, y1: ay, x2: bx, y2: by, stroke: '#D2232A', 'stroke-width': slashSw, 'stroke-linecap': 'round' }));
+    }
+    const textY = isUpper ? (y - 6) : (y + fontSize + 6);
+    const valY = isUpper ? (textY - fontSize - 1) : (textY + fontSize + 1);
+    g.appendChild(svgEl('text', {
+      x: labelX + 12, y: textY,
+      'font-family': 'IBM Plex Mono, monospace', 'font-size': fontSize,
+      fill: '#D2232A', 'font-weight': 700, 'letter-spacing': 0.5
+    }, label));
+    g.appendChild(svgEl('text', {
+      x: labelX + 12, y: valY,
+      'font-family': 'IBM Plex Mono, monospace', 'font-size': fontSize - 1,
+      fill: '#D2232A', 'font-weight': 500
+    }, value.toFixed(decimals)));
+    const hitH = fontSize * 2 + 12;
+    const hitX = labelX - 8;
+    const hitW = Math.max(60, label.length * (fontSize * 0.65) + 50);
+    const hitY = isUpper ? (y - hitH) : y;
+    g.appendChild(svgEl('rect', { x: hitX, y: hitY, width: hitW, height: hitH, fill: 'transparent' }));
+    svg.appendChild(g);
+  } else {
+    const x = valToCoord(value);
+    svg.appendChild(svgEl('line', {
+      x1: x, y1: plotT, x2: x, y2: plotT + plotH,
+      stroke: '#D2232A', 'stroke-width': sw, 'stroke-linecap': 'round'
+    }));
+    const labelY = plotT + plotH * lf;
+    const g = svgEl('g', { class: 'label-handle', 'data-bell-label-handle': isUpper ? 'usl' : 'lsl' });
+    const horizontalDir = isUpper ? 1 : -1;
+    for (let k = 0; k < 3; k++) {
+      const ax = x;
+      const ay = labelY - (k * slashOffset);
+      const bx = ax + horizontalDir * Math.sin(angle) * slashLen;
+      const by = ay + Math.cos(angle) * slashLen;
+      g.appendChild(svgEl('line', { x1: ax, y1: ay, x2: bx, y2: by, stroke: '#D2232A', 'stroke-width': slashSw, 'stroke-linecap': 'round' }));
+    }
+    const textX = isUpper ? (x + 14) : (x - 14);
+    const textAnchor = isUpper ? 'start' : 'end';
+    g.appendChild(svgEl('text', {
+      x: textX, y: labelY + 4, 'text-anchor': textAnchor,
+      'font-family': 'IBM Plex Mono, monospace', 'font-size': fontSize,
+      fill: '#D2232A', 'font-weight': 700, 'letter-spacing': 0.5
+    }, label));
+    g.appendChild(svgEl('text', {
+      x: textX, y: labelY + fontSize + 6, 'text-anchor': textAnchor,
+      'font-family': 'IBM Plex Mono, monospace', 'font-size': fontSize - 1,
+      fill: '#D2232A', 'font-weight': 500
+    }, value.toFixed(decimals)));
+    const hitW = 70, hitH = fontSize * 2 + 12;
+    const hitX = isUpper ? x : (x - hitW);
+    const hitY = labelY - 4;
+    g.appendChild(svgEl('rect', { x: hitX, y: hitY, width: hitW, height: hitH, fill: 'transparent' }));
+    svg.appendChild(g);
+  }
+}
+
+function setupBellChartDrag() {
+  const svg = document.getElementById('bellChart');
+  if (!svg) return;
+  let dragging = null;
+
+  svg.addEventListener('pointerdown', (e) => {
+    const labelHandle = e.target.closest('[data-bell-label-handle]');
+    if (!labelHandle) return;
+    e.preventDefault();
+    dragging = { kind: labelHandle.dataset.bellLabelHandle, el: labelHandle };
+    labelHandle.classList.add('dragging');
+    try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const { isVertical, W, H, padTop, padBot, padL, padR } = getBellPaddings();
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const local = pt.matrixTransform(ctm.inverse());
+    let frac;
+    if (isVertical) frac = (local.x - padL) / (W - padL - padR);
+    else frac = (local.y - padTop) / (H - padTop - padBot);
+    frac = Math.max(0.05, Math.min(0.95, frac));
+    if (dragging.kind === 'usl') state.ui.bellUslLabelFrac = frac;
+    else if (dragging.kind === 'lsl') state.ui.bellLslLabelFrac = frac;
+    drawBellChart();
+  });
+  const endDrag = (e) => {
+    if (!dragging) return;
+    if (dragging.el) dragging.el.classList.remove('dragging');
+    dragging = null;
+    try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+    saveState();
+  };
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+}
+
+function setupBellToolbar() {
+  document.getElementById('bellOrientSeg').addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') return;
+    state.ui.bellOrient = e.target.dataset.orient;
+    document.querySelectorAll('#bellOrientSeg button').forEach(b => b.classList.toggle('active', b === e.target));
+    drawBellChart(); saveState();
+  });
+  document.getElementById('bellFontDec').onclick = () => {
+    state.ui.bellFont = Math.max(8, state.ui.bellFont - 1);
+    document.getElementById('bellFontVal').textContent = state.ui.bellFont;
+    drawBellChart(); saveState();
+  };
+  document.getElementById('bellFontInc').onclick = () => {
+    state.ui.bellFont = Math.min(20, state.ui.bellFont + 1);
+    document.getElementById('bellFontVal').textContent = state.ui.bellFont;
+    drawBellChart(); saveState();
+  };
+  document.getElementById('bellDecDec').onclick = () => {
+    state.ui.bellDecimals = Math.max(0, state.ui.bellDecimals - 1);
+    document.getElementById('bellDecVal').textContent = state.ui.bellDecimals;
+    drawBellChart(); saveState();
+  };
+  document.getElementById('bellDecInc').onclick = () => {
+    state.ui.bellDecimals = Math.min(4, state.ui.bellDecimals + 1);
+    document.getElementById('bellDecVal').textContent = state.ui.bellDecimals;
+    drawBellChart(); saveState();
+  };
+  document.querySelectorAll('.tool-toggle[data-bell-show]').forEach(b => {
+    b.onclick = () => {
+      const which = b.dataset.bellShow; // 'mean' | '3sigma' | '4sigma' | 'spec'
+      const key = which === 'mean' ? 'bellShowMean'
+                : which === '3sigma' ? 'bellShow3Sigma'
+                : which === '4sigma' ? 'bellShow4Sigma'
+                : 'bellShowSpec';
+      state.ui[key] = !state.ui[key];
+      b.classList.toggle('active', state.ui[key]);
+      drawBellChart(); saveState();
+    };
+  });
+  // Bell spec line width counter
+  document.getElementById('bellSpecDec').onclick = () => {
+    state.ui.bellSpecWidth = Math.max(1, state.ui.bellSpecWidth - 1);
+    document.getElementById('bellSpecVal').textContent = state.ui.bellSpecWidth;
+    drawBellChart(); saveState();
+  };
+  document.getElementById('bellSpecInc').onclick = () => {
+    state.ui.bellSpecWidth = Math.min(6, state.ui.bellSpecWidth + 1);
+    document.getElementById('bellSpecVal').textContent = state.ui.bellSpecWidth;
+    drawBellChart(); saveState();
+  };
+}
+
+/* ============================================================
+   RUN CHART (Chart.js)
+   ============================================================ */
+let runChartObj = null;
+function drawRunChart() {
+  const ctx = document.getElementById('runChart');
+  if (!ctx) return;
+  if (runChartObj) runChartObj.destroy();
+
+  const labels = Array.from({ length: MAX_ROWS }, (_, i) => i + 1);
+
+  const datasets = [];
+  state.datasets.forEach(d => {
+    datasets.push({
+      label: d.name,
+      data: d.data.map(v => v === null ? null : v),
+      borderColor: d.color,
+      backgroundColor: d.color,
+      pointBackgroundColor: d.color,
+      pointBorderColor: d.color,
+      borderWidth: 1.8,
+      tension: 0.15,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      pointStyle: chartJsPointStyle(d.marker),
+      spanGaps: true
+    });
+    // USL/LSL spec lines for this dataset
+    if (!isNaN(d.upper)) {
+      datasets.push({
+        label: d.name + ' USL',
+        data: Array(MAX_ROWS).fill(d.upper),
+        borderColor: d.color,
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderDash: [6, 4],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        tension: 0,
+        _hideLegend: true
+      });
+    }
+    if (!isNaN(d.lower)) {
+      datasets.push({
+        label: d.name + ' LSL',
+        data: Array(MAX_ROWS).fill(d.lower),
+        borderColor: d.color,
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderDash: [6, 4],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        tension: 0,
+        _hideLegend: true
+      });
+    }
+  });
+
+  runChartObj = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: { family: 'IBM Plex Sans', size: 11 },
+            usePointStyle: true,
+            padding: 12,
+            filter: (item) => !/(USL|LSL)$/.test(item.text)
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(20,17,15,0.95)',
+          titleFont: { family: 'IBM Plex Mono', size: 11, weight: 'normal' },
+          bodyFont: { family: 'IBM Plex Mono', size: 12 },
+          padding: 10,
+          cornerRadius: 2,
+          callbacks: {
+            title: (items) => 'sample № ' + items[0].label,
+            label: (item) => `  ${item.dataset.label}: ${item.formattedValue}`
+          },
+          filter: (item) => !/(USL|LSL)$/.test(item.dataset.label)
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Sample No.', font: { family: 'IBM Plex Sans', size: 10 }, color: '#888376' },
+          grid: { color: '#F0EDE5', drawBorder: false },
+          ticks: { font: { family: 'IBM Plex Mono', size: 10 }, color: '#888376' }
+        },
+        y: {
+          title: { display: true, text: 'Measurement', font: { family: 'IBM Plex Sans', size: 10 }, color: '#888376' },
+          grid: { color: '#F0EDE5', drawBorder: false },
+          ticks: { font: { family: 'IBM Plex Mono', size: 10 }, color: '#888376' }
+        }
+      },
+      animation: { duration: 250, easing: 'easeOutQuad' }
+    }
+  });
+}
+function chartJsPointStyle(marker) {
+  switch (marker) {
+    case 'circle': return 'circle';
+    case 'square': return 'rect';
+    case 'triangle': return 'triangle';
+    case 'diamond': return 'rectRot';
+    case 'star': return 'star';
+    case 'cross': return 'crossRot';
+    default: return 'circle';
+  }
+}
+
+/* ============================================================
+   ADD / REMOVE DATASET
+   ============================================================ */
+function addDataset() {
+  if (state.datasets.length >= MAX_DATASETS) return;
+  state.datasets.push(newDataset(state.datasets.length));
+  // Reset spacing if existed (will auto-redistribute)
+  state.ui.spacing = null;
+  onStateChange();
+}
+
+/* ============================================================
+   COMMON FORM BINDING
+   ============================================================ */
+function bindCommonInputs() {
+  const ids = ['partName', 'inspectionItem', 'figureDetail', 'accuracy'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    el.value = state.common[id] || '';
+    el.addEventListener('input', e => {
+      state.common[id] = e.target.value;
+      saveState();
+    });
+  });
+}
+
+/* ============================================================
+   EXCEL IMPORT
+   ============================================================ */
+function setupExcelImport() {
+  const btn = document.getElementById('importExcelBtn');
+  const modal = document.getElementById('excelModal');
+  const zone = document.getElementById('excelDropZone');
+  const fileInput = document.getElementById('excelFile');
+  btn.onclick = () => modal.classList.add('show');
+  zone.onclick = () => fileInput.click();
+  ['dragenter', 'dragover'].forEach(ev =>
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('dragover'); })
+  );
+  ['dragleave', 'drop'].forEach(ev =>
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('dragover'); })
+  );
+  zone.addEventListener('drop', e => {
+    if (e.dataTransfer.files[0]) handleExcel(e.dataTransfer.files[0]);
+  });
+  fileInput.onchange = e => { if (e.target.files[0]) handleExcel(e.target.files[0]); };
+}
+
+async function handleExcel(file) {
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array' });
+    let ws = null;
+    for (const name of wb.SheetNames) {
+      const sheet = wb.Sheets[name];
+      if (sheet && Object.keys(sheet).length > 1) { ws = sheet; break; }
+    }
+    if (!ws) ws = wb.Sheets[wb.SheetNames[0]];
+    const get = cell => ws[cell] ? ws[cell].v : null;
+
+    // Direct cell refs (FM8.3.2-PE-17 layout: C8/D8 USL, C9/D9 LSL, C13:C42 / D13:D42 data)
+    let upper = [get('C8'), get('D8'), get('E8'), get('F8'), get('G8'), get('H8'), get('I8'), get('J8')];
+    let lower = [get('C9'), get('D9'), get('E9'), get('F9'), get('G9'), get('H9'), get('I9'), get('J9')];
+
+    // Fallback: search for "Upper Level"/"Lower Level"
+    if (typeof upper[0] !== 'number' || typeof lower[0] !== 'number') {
+      for (let row = 1; row <= 50; row++) {
+        const lblA = String(get('A' + row) || '').toLowerCase();
+        const lblB = String(get('B' + row) || '').toLowerCase();
+        const lbl = lblA + ' ' + lblB;
+        if (lbl.includes('upper level') || lbl.includes('usl')) {
+          for (let c = 0; c < 8; c++) upper[c] = get(String.fromCharCode(67 + c) + row);
+        }
+        if (lbl.includes('lower level') || lbl.includes('lsl')) {
+          for (let c = 0; c < 8; c++) lower[c] = get(String.fromCharCode(67 + c) + row);
+        }
+      }
+    }
+    // Find data start
+    let dataStart = 13;
+    for (let row = 1; row <= 50; row++) {
+      const lblA = String(get('A' + row) || '').toLowerCase();
+      if (lblA.includes('item data')) { dataStart = row + 1; break; }
+    }
+    // Detect how many dataset columns have data
+    const cols = [];
+    for (let c = 0; c < 8; c++) {
+      const letter = String.fromCharCode(67 + c);
+      const data = [];
+      let any = false;
+      for (let i = 0; i < MAX_ROWS; i++) {
+        const v = get(letter + (dataStart + i));
+        if (typeof v === 'number') { data.push(v); any = true; }
+        else data.push(null);
+      }
+      if (any) {
+        cols.push({ data, upper: upper[c], lower: lower[c] });
+      }
+    }
+    if (cols.length === 0) { alert('No data found in expected layout'); return; }
+
+    // Build new datasets (preserve user-set color/marker if dataset already exists)
+    const newDatasets = cols.slice(0, MAX_DATASETS).map((col, i) => {
+      const base = state.datasets[i] ? { ...state.datasets[i] } : newDataset(i);
+      base.upper = (typeof col.upper === 'number') ? col.upper : base.upper;
+      base.lower = (typeof col.lower === 'number') ? col.lower : base.lower;
+      base.data = [...col.data, ...Array(MAX_ROWS - col.data.length).fill(null)];
+      // Try to grab a name from row 11/12 (Item Data label row)
+      const letter = String.fromCharCode(67 + i);
+      const nameCandidate = get(letter + (dataStart - 2)) || get(letter + (dataStart - 1));
+      if (nameCandidate && typeof nameCandidate === 'string' && nameCandidate.length < 40) {
+        base.name = nameCandidate;
+      }
+      return base;
+    });
+    while (newDatasets.length < MIN_DATASETS) newDatasets.push(newDataset(newDatasets.length));
+    state.datasets = newDatasets;
+    state.ui.spacing = null;
+
+    // Header info — best effort
+    const partName = get('B4') || get('C4') || '';
+    const inspItem = get('B6') || get('C6') || '';
+    if (partName) state.common.partName = String(partName);
+    if (inspItem) state.common.inspectionItem = String(inspItem);
+    document.getElementById('partName').value = state.common.partName;
+    document.getElementById('inspectionItem').value = state.common.inspectionItem;
+
+    onStateChange();
+    document.getElementById('excelModal').classList.remove('show');
+    const totalPts = cols.reduce((acc, c) => acc + c.data.filter(x => x !== null).length, 0);
+    showToast(`${t('toastImported')} · ${cols.length} datasets, ${totalPts} pts`);
+  } catch (err) {
+    alert('Excel import failed: ' + err.message);
+    console.error(err);
+  }
+}
+
+/* ============================================================
+   IMAGE OCR IMPORT
+   ============================================================ */
+function setupImageImport() {
+  const btn = document.getElementById('importImageBtn');
+  const modal = document.getElementById('imageModal');
+  const zone = document.getElementById('imageDropZone');
+  const fileInput = document.getElementById('imageFile');
+  btn.onclick = () => {
+    modal.classList.add('show');
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('ocrProgress').style.display = 'none';
+    document.getElementById('ocrResult').style.display = 'none';
+  };
+  zone.onclick = () => fileInput.click();
+  ['dragenter', 'dragover'].forEach(ev =>
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('dragover'); })
+  );
+  ['dragleave', 'drop'].forEach(ev =>
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('dragover'); })
+  );
+  zone.addEventListener('drop', e => {
+    if (e.dataTransfer.files[0]) handleImage(e.dataTransfer.files[0]);
+  });
+  fileInput.onchange = e => { if (e.target.files[0]) handleImage(e.target.files[0]); };
+}
+
+async function handleImage(file) {
+  const preview = document.getElementById('imagePreview');
+  const progress = document.getElementById('ocrProgress');
+  const status = document.getElementById('ocrStatus');
+  const bar = document.getElementById('ocrBar');
+  const result = document.getElementById('ocrResult');
+  const reader = new FileReader();
+  reader.onload = () => { preview.src = reader.result; preview.style.display = 'block'; };
+  reader.readAsDataURL(file);
+  progress.style.display = 'block';
+  result.style.display = 'none';
+  status.textContent = 'Loading OCR engine...';
+  bar.style.width = '0%';
+  try {
+    const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          status.textContent = `Reading text · ${Math.round(m.progress * 100)}%`;
+          bar.style.width = (m.progress * 100) + '%';
+        } else if (m.status) {
+          status.textContent = m.status.charAt(0).toUpperCase() + m.status.slice(1) + '...';
+        }
+      },
+      tessedit_char_whitelist: '0123456789.,-+ \n\t'
+    });
+    progress.style.display = 'none';
+    result.style.display = 'block';
+    const matches = (text.match(/[-+]?\d+(?:[.,]\d+)?/g) || [])
+      .map(s => s.replace(',', '.'))
+      .filter(s => !isNaN(parseFloat(s)));
+    document.getElementById('ocrText').value = matches.join('\n');
+    if (matches.length === 0) {
+      document.getElementById('ocrText').placeholder = t('noNums');
+    }
+    // Build target buttons (one per dataset)
+    const targetEl = document.getElementById('ocrTargetSelect');
+    targetEl.innerHTML = '';
+    state.datasets.forEach((d, i) => {
+      const b = document.createElement('button');
+      b.className = 'btn btn-dark';
+      b.textContent = `${t('applyTo')} ${d.name}`;
+      b.onclick = () => applyOCR(i);
+      targetEl.appendChild(b);
+    });
+  } catch (err) {
+    progress.style.display = 'none';
+    alert('OCR failed: ' + err.message);
+    console.error(err);
+  }
+}
+
+function applyOCR(dsIdx) {
+  const text = document.getElementById('ocrText').value;
+  const nums = text.split(/[\s,;\n\r\t]+/)
+    .map(s => parseFloat(s.replace(',', '.')))
+    .filter(x => !isNaN(x))
+    .slice(0, MAX_ROWS);
+  if (nums.length === 0) { alert(t('noNums')); return; }
+  state.datasets[dsIdx].data = [...nums, ...Array(MAX_ROWS - nums.length).fill(null)];
+  onStateChange();
+  document.getElementById('imageModal').classList.remove('show');
+  showToast(`${t('toastApplied')} · ${nums.length} → ${state.datasets[dsIdx].name}`);
+}
+
+/* ============================================================
+   TOOLBAR ACTIONS
+   ============================================================ */
+function setupToolbar() {
+  // Orientation
+  document.getElementById('orientSeg').addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') return;
+    state.ui.capOrient = e.target.dataset.orient;
+    document.querySelectorAll('#orientSeg button').forEach(b => b.classList.toggle('active', b === e.target));
+    drawCapChart();
+    saveState();
+  });
+  // Font size
+  document.getElementById('fontDec').onclick = () => {
+    state.ui.capFont = Math.max(8, state.ui.capFont - 1);
+    document.getElementById('fontVal').textContent = state.ui.capFont;
+    drawCapChart(); saveState();
+  };
+  document.getElementById('fontInc').onclick = () => {
+    state.ui.capFont = Math.min(20, state.ui.capFont + 1);
+    document.getElementById('fontVal').textContent = state.ui.capFont;
+    drawCapChart(); saveState();
+  };
+  // Decimals
+  document.getElementById('decDec').onclick = () => {
+    state.ui.capDecimals = Math.max(0, state.ui.capDecimals - 1);
+    document.getElementById('decVal').textContent = state.ui.capDecimals;
+    drawCapChart(); saveState();
+  };
+  document.getElementById('decInc').onclick = () => {
+    state.ui.capDecimals = Math.min(4, state.ui.capDecimals + 1);
+    document.getElementById('decVal').textContent = state.ui.capDecimals;
+    drawCapChart(); saveState();
+  };
+  // Show toggles
+  document.querySelectorAll('.tool-toggle[data-show]').forEach(b => {
+    b.onclick = () => {
+      const which = b.dataset.show;
+      const key = which === 'max' ? 'showMax' : which === 'min' ? 'showMin' : 'showAvg';
+      state.ui[key] = !state.ui[key];
+      b.classList.toggle('active', state.ui[key]);
+      drawCapChart(); saveState();
+    };
+  });
+  // Reset spacing
+  document.getElementById('resetSpacingBtn').onclick = () => {
+    state.ui.spacing = null;
+    drawCapChart(); saveState();
+  };
+  // Spec line width (Capability)
+  document.getElementById('capSpecDec').onclick = () => {
+    state.ui.capSpecWidth = Math.max(1, state.ui.capSpecWidth - 1);
+    document.getElementById('capSpecVal').textContent = state.ui.capSpecWidth;
+    drawCapChart(); saveState();
+  };
+  document.getElementById('capSpecInc').onclick = () => {
+    state.ui.capSpecWidth = Math.min(6, state.ui.capSpecWidth + 1);
+    document.getElementById('capSpecVal').textContent = state.ui.capSpecWidth;
+    drawCapChart(); saveState();
+  };
+  // Spec slash params (shared by Capability + Distribution)
+  const refreshBoth = () => { drawCapChart(); drawBellChart(); saveState(); };
+  document.getElementById('slashLenDec').onclick = () => {
+    state.ui.specSlashLen = Math.max(4, (state.ui.specSlashLen ?? 10) - 1);
+    document.getElementById('slashLenVal').textContent = state.ui.specSlashLen;
+    refreshBoth();
+  };
+  document.getElementById('slashLenInc').onclick = () => {
+    state.ui.specSlashLen = Math.min(24, (state.ui.specSlashLen ?? 10) + 1);
+    document.getElementById('slashLenVal').textContent = state.ui.specSlashLen;
+    refreshBoth();
+  };
+  document.getElementById('slashGapDec').onclick = () => {
+    state.ui.specSlashOffset = Math.max(1, (state.ui.specSlashOffset ?? 4) - 1);
+    document.getElementById('slashGapVal').textContent = state.ui.specSlashOffset;
+    refreshBoth();
+  };
+  document.getElementById('slashGapInc').onclick = () => {
+    state.ui.specSlashOffset = Math.min(12, (state.ui.specSlashOffset ?? 4) + 1);
+    document.getElementById('slashGapVal').textContent = state.ui.specSlashOffset;
+    refreshBoth();
+  };
+  document.getElementById('slashAngDec').onclick = () => {
+    state.ui.specSlashAngle = Math.max(0, (state.ui.specSlashAngle ?? 30) - 5);
+    document.getElementById('slashAngVal').textContent = state.ui.specSlashAngle + '°';
+    refreshBoth();
+  };
+  document.getElementById('slashAngInc').onclick = () => {
+    state.ui.specSlashAngle = Math.min(80, (state.ui.specSlashAngle ?? 30) + 5);
+    document.getElementById('slashAngVal').textContent = state.ui.specSlashAngle + '°';
+    refreshBoth();
+  };
+}
+
+/* ============================================================
+   RESIZE (drag + presets)
+   ============================================================ */
+function applyChartSize(which) {
+  if (which === 'cap') {
+    const wrap = document.getElementById('capWrap');
+    const w = state.ui.capWidth, h = state.ui.capHeight;
+    wrap.style.width = w + 'px';
+    wrap.style.height = h + 'px';
+    document.getElementById('capReadout').textContent = `${Math.round(w)} × ${Math.round(h)}`;
+    drawCapChart();
+  } else if (which === 'run') {
+    const wrap = document.getElementById('runWrap');
+    const w = state.ui.runWidth, h = state.ui.runHeight;
+    wrap.style.width = w + 'px';
+    wrap.style.height = h + 'px';
+    document.getElementById('runReadout').textContent = `${Math.round(w)} × ${Math.round(h)}`;
+    if (runChartObj) {
+      runChartObj.resize();
+    }
+  } else if (which === 'bell') {
+    const wrap = document.getElementById('bellWrap');
+    const w = state.ui.bellWidth, h = state.ui.bellHeight;
+    wrap.style.width = w + 'px';
+    wrap.style.height = h + 'px';
+    document.getElementById('bellReadout').textContent = `${Math.round(w)} × ${Math.round(h)}`;
+    drawBellChart();
+  }
+}
+
+function setupResizeHandles() {
+  document.querySelectorAll('[data-resize-handle]').forEach(handle => {
+    const which = handle.dataset.resizeHandle;
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const wrap = handle.closest('.chart-resize-wrap');
+      handle.classList.add('dragging');
+      wrap.classList.add('resizing');
+      const startX = e.clientX, startY = e.clientY;
+      const startW = which === 'cap' ? state.ui.capWidth : (which === 'bell' ? state.ui.bellWidth : state.ui.runWidth);
+      const startH = which === 'cap' ? state.ui.capHeight : (which === 'bell' ? state.ui.bellHeight : state.ui.runHeight);
+      const aspect = which === 'cap' ? state.ui.capAspect : (which === 'bell' ? state.ui.bellAspect : state.ui.runAspect);
+      try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+
+      const move = (ev) => {
+        let nw = Math.max(280, startW + (ev.clientX - startX));
+        let nh = Math.max(220, startH + (ev.clientY - startY));
+        if (aspect !== 'free') {
+          const r = parseAspect(aspect);
+          // Use whichever delta is larger to control the size
+          const deltaX = Math.abs(ev.clientX - startX);
+          const deltaY = Math.abs(ev.clientY - startY);
+          if (deltaX >= deltaY) {
+            nh = nw / r;
+          } else {
+            nw = nh * r;
+          }
+        }
+        nw = Math.min(1400, nw);
+        nh = Math.min(1000, nh);
+        if (which === 'cap') {
+          state.ui.capWidth = nw;
+          state.ui.capHeight = nh;
+        } else if (which === 'bell') {
+          state.ui.bellWidth = nw;
+          state.ui.bellHeight = nh;
+        } else {
+          state.ui.runWidth = nw;
+          state.ui.runHeight = nh;
+        }
+        applyChartSize(which);
+      };
+      const up = (ev) => {
+        handle.classList.remove('dragging');
+        wrap.classList.remove('resizing');
+        try { handle.releasePointerCapture(ev.pointerId); } catch (_) {}
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', up);
+        saveState();
+      };
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up);
+    });
+  });
+}
+
+function parseAspect(s) {
+  if (s === '16:9') return 16 / 9;
+  if (s === '4:3') return 4 / 3;
+  if (s === '1:1') return 1;
+  return null;
+}
+
+function setupAspectPresets() {
+  document.querySelectorAll('[data-aspect-seg]').forEach(seg => {
+    const which = seg.dataset.aspectSeg; // 'cap' | 'run'
+    seg.querySelectorAll('button').forEach(b => {
+      b.onclick = () => {
+        const aspect = b.dataset.aspect;
+        seg.querySelectorAll('button').forEach(bb => bb.classList.toggle('active', bb === b));
+        if (which === 'cap') state.ui.capAspect = aspect;
+        else if (which === 'bell') state.ui.bellAspect = aspect;
+        else state.ui.runAspect = aspect;
+        // Adjust height to satisfy aspect, keep width
+        if (aspect !== 'free') {
+          const r = parseAspect(aspect);
+          if (which === 'cap') state.ui.capHeight = state.ui.capWidth / r;
+          else if (which === 'bell') state.ui.bellHeight = state.ui.bellWidth / r;
+          else state.ui.runHeight = state.ui.runWidth / r;
+        }
+        applyChartSize(which);
+        saveState();
+      };
+    });
+  });
+}
+
+/* ============================================================
+   EXPORT (Copy PNG / Save PNG / Save SVG)
+   ============================================================ */
+function setupChartExport() {
+  document.querySelectorAll('[data-export]').forEach(btn => {
+    const which = btn.dataset.export;  // 'cap' | 'run'
+    const fmt = btn.dataset.fmt;       // 'copy-png' | 'png' | 'svg'
+    btn.onclick = () => exportChart(which, fmt);
+  });
+}
+
+function svgToPngBlob(svg, scale = 2) {
+  return new Promise((resolve, reject) => {
+    try {
+      const vb = svg.viewBox.baseVal;
+      const W = vb.width, H = vb.height;
+      // Inline computed font-family on text elements (so the rendered PNG keeps fonts even if browser strips them)
+      const cloned = svg.cloneNode(true);
+      cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      cloned.setAttribute('width', W);
+      cloned.setAttribute('height', H);
+      // Add a white background rect (otherwise transparent)
+      const ns = 'http://www.w3.org/2000/svg';
+      const bg = document.createElementNS(ns, 'rect');
+      bg.setAttribute('x', 0); bg.setAttribute('y', 0);
+      bg.setAttribute('width', W); bg.setAttribute('height', H);
+      bg.setAttribute('fill', 'white');
+      cloned.insertBefore(bg, cloned.firstChild);
+
+      const xml = new XMLSerializer().serializeToString(cloned);
+      const svgBlob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = W * scale;
+        canvas.height = H * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(blob => resolve(blob), 'image/png');
+      };
+      img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+      img.src = url;
+    } catch (e) { reject(e); }
+  });
+}
+
+function svgToSvgBlob(svg) {
+  const vb = svg.viewBox.baseVal;
+  const cloned = svg.cloneNode(true);
+  cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  cloned.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+  cloned.setAttribute('width', vb.width);
+  cloned.setAttribute('height', vb.height);
+  // Inline a minimal style with web-safe font fallbacks (PowerPoint imports SVG with embedded styles)
+  const ns = 'http://www.w3.org/2000/svg';
+  const style = document.createElementNS(ns, 'style');
+  style.textContent = `
+    text { font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif; }
+    .mono, text[font-family*="Mono"] { font-family: 'IBM Plex Mono', 'Courier New', monospace; }
+  `;
+  cloned.insertBefore(style, cloned.firstChild);
+  // Add white background
+  const bg = document.createElementNS(ns, 'rect');
+  bg.setAttribute('x', 0); bg.setAttribute('y', 0);
+  bg.setAttribute('width', vb.width); bg.setAttribute('height', vb.height);
+  bg.setAttribute('fill', 'white');
+  cloned.insertBefore(bg, style.nextSibling);
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(cloned);
+  return new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+}
+
+function canvasToPngBlob(canvas) {
+  return new Promise(resolve => canvas.toBlob(blob => resolve(blob), 'image/png'));
+}
+
+async function exportChart(which, fmt) {
+  try {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const baseName = which === 'cap' ? 'capability' : (which === 'bell' ? 'distribution' : 'run-chart');
+    let blob, ext;
+    if (which === 'cap' || which === 'bell') {
+      const svg = document.getElementById(which === 'cap' ? 'capChart' : 'bellChart');
+      if (fmt === 'svg' || fmt === 'copy-svg') {
+        blob = svgToSvgBlob(svg);
+        ext = 'svg';
+      } else {
+        blob = await svgToPngBlob(svg, 2);
+        ext = 'png';
+      }
+    } else {
+      // run chart = canvas
+      const canvas = document.getElementById('runChart');
+      blob = await canvasToPngBlob(canvas);
+      ext = 'png';
+    }
+    if (fmt === 'copy-png') {
+      try {
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          showToast(t('toastCopied'));
+          return;
+        }
+        throw new Error('Clipboard API not available');
+      } catch (e) {
+        // Fallback: download
+        downloadBlob(blob, `${baseName}-${stamp}.${ext}`);
+        showToast(t('toastCopyFail'));
+      }
+    } else if (fmt === 'copy-svg') {
+      // Try ClipboardItem with image/svg+xml first; fall back to text/plain (the SVG markup)
+      try {
+        if (navigator.clipboard && window.ClipboardItem) {
+          // Some browsers reject 'image/svg+xml' MIME — try, then fall through
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/svg+xml': blob })]);
+            showToast(t('toastCopied'));
+            return;
+          } catch (_) { /* fall through to text/plain */ }
+          const text = await blob.text();
+          await navigator.clipboard.writeText(text);
+          showToast(t('toastCopied'));
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          const text = await blob.text();
+          await navigator.clipboard.writeText(text);
+          showToast(t('toastCopied'));
+          return;
+        }
+        throw new Error('Clipboard API not available');
+      } catch (e) {
+        downloadBlob(blob, `${baseName}-${stamp}.svg`);
+        showToast(t('toastCopyFail'));
+      }
+    } else {
+      downloadBlob(blob, `${baseName}-${stamp}.${ext}`);
+      showToast(ext === 'svg' ? t('toastSavedSvg') : t('toastSavedPng'));
+    }
+  } catch (e) {
+    console.error('Export failed', e);
+    alert('Export failed: ' + e.message);
+  }
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+}
+
+function syncToolbarFromState() {
+  document.getElementById('fontVal').textContent = state.ui.capFont;
+  document.getElementById('decVal').textContent = state.ui.capDecimals;
+  document.querySelectorAll('#orientSeg button').forEach(b => {
+    b.classList.toggle('active', b.dataset.orient === state.ui.capOrient);
+  });
+  document.querySelector('.tool-toggle[data-show="max"]').classList.toggle('active', state.ui.showMax);
+  document.querySelector('.tool-toggle[data-show="avg"]').classList.toggle('active', state.ui.showAvg);
+  document.querySelector('.tool-toggle[data-show="min"]').classList.toggle('active', state.ui.showMin);
+  // Aspect segs
+  document.querySelectorAll('[data-aspect-seg]').forEach(seg => {
+    const which = seg.dataset.aspectSeg;
+    const cur = which === 'cap' ? state.ui.capAspect : (which === 'bell' ? state.ui.bellAspect : state.ui.runAspect);
+    seg.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.dataset.aspect === cur);
+    });
+  });
+  // Bell toolbar widgets
+  document.getElementById('bellFontVal').textContent = state.ui.bellFont;
+  document.getElementById('bellDecVal').textContent = state.ui.bellDecimals;
+  document.querySelectorAll('#bellOrientSeg button').forEach(b => {
+    b.classList.toggle('active', b.dataset.orient === state.ui.bellOrient);
+  });
+  document.querySelector('.tool-toggle[data-bell-show="mean"]').classList.toggle('active', state.ui.bellShowMean);
+  document.querySelector('.tool-toggle[data-bell-show="3sigma"]').classList.toggle('active', state.ui.bellShow3Sigma);
+  document.querySelector('.tool-toggle[data-bell-show="4sigma"]').classList.toggle('active', state.ui.bellShow4Sigma);
+  document.querySelector('.tool-toggle[data-bell-show="spec"]').classList.toggle('active', state.ui.bellShowSpec);
+  // Spec line width counters
+  document.getElementById('capSpecVal').textContent = state.ui.capSpecWidth;
+  document.getElementById('bellSpecVal').textContent = state.ui.bellSpecWidth;
+  // Slash params
+  document.getElementById('slashLenVal').textContent = state.ui.specSlashLen ?? 10;
+  document.getElementById('slashGapVal').textContent = state.ui.specSlashOffset ?? 4;
+  document.getElementById('slashAngVal').textContent = (state.ui.specSlashAngle ?? 30) + '°';
+  // Apply current sizes to wrappers
+  applyChartSize('cap');
+  applyChartSize('run');
+  applyChartSize('bell');
+}
+
+/* ============================================================
+   LANG SWITCHER
+   ============================================================ */
+function setupLangSwitcher() {
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.onclick = () => {
+      LANG = b.dataset.lang;
+      state.ui.lang = LANG;
+      applyLang();
+      saveState();
+    };
+  });
+}
+
+/* ============================================================
+   ACTIONS: print / save / clear
+   ============================================================ */
+document.getElementById('printBtn').onclick = () => window.print();
+
+document.getElementById('exportJsonBtn').onclick = () => {
+  const out = {
+    app: { version: APP_VERSION, author: APP_AUTHOR, exportedAt: new Date().toISOString() },
+    common: state.common,
+    datasets: state.datasets.map(d => ({ ...d, stats: calc(d) })),
+    ui: state.ui
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.download = `cpk-record-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(t('toastSaved'));
+};
+
+function resetAll() {
+  if (!confirm(t('confirmClear'))) return;
+  state.common = { partName: '', inspectionItem: '', figureDetail: '', accuracy: '' };
+  state.datasets = [newDataset(0), newDataset(1)];
+  state.ui.spacing = null;
+  // re-fill common inputs
+  ['partName', 'inspectionItem', 'figureDetail', 'accuracy'].forEach(id =>
+    document.getElementById(id).value = ''
+  );
+  onStateChange();
+}
+
+/* ============================================================
+   COMMON onStateChange — re-render & save
+   ============================================================ */
+function onStateChange(opts = {}) {
+  if (!opts.skipDsTable) renderDsTable();
+  if (!opts.skipDataGrid) renderDataGrid();
+  renderStats();
+  renderDsStyleRow();
+  drawCapChart();
+  drawRunChart();
+  drawBellChart();
+  saveState();
+}
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function showToast(msg) {
+  const tEl = document.createElement('div');
+  tEl.className = 'toast';
+  tEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg><span>${msg}</span>`;
+  document.body.appendChild(tEl);
+  setTimeout(() => { tEl.style.animation = 'slideIn 0.2s reverse'; setTimeout(() => tEl.remove(), 200); }, 2800);
+}
+
+/* ============================================================
+   MODALS — close behavior
+   ============================================================ */
+document.querySelectorAll('[data-close]').forEach(b => {
+  b.onclick = e => e.target.closest('.modal-backdrop').classList.remove('show');
+});
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-backdrop.show').forEach(m => m.classList.remove('show'));
+  }
+});
+
+/* ============================================================
+   ADD DATASET BUTTON
+   ============================================================ */
+document.getElementById('addDsBtn').onclick = addDataset;
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+function boot() {
+  if (!loadState()) {
+    bootDefaults();
+  } else {
+    showToast(t('toastSettingsRestored'));
+  }
+  bindCommonInputs();
+  setupExcelImport();
+  setupImageImport();
+  setupToolbar();
+  setupLangSwitcher();
+  setupCapChartDrag();
+  setupBellChartDrag();
+  setupBellToolbar();
+  setupResizeHandles();
+  setupAspectPresets();
+  setupChartExport();
+  syncToolbarFromState();
+  applyLang();        // applies translations + triggers initial render
+  // applyLang() already calls renderDsTable, renderStats, drawCapChart, drawRunChart, drawBellChart
+  // but doesn't render the data grid + style row, so call onStateChange-like:
+  renderDataGrid();
+  renderDsStyleRow();
+}
+
+boot();
+</script>
+
+</body>
+</html>

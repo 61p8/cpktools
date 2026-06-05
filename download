@@ -1,0 +1,36 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (if Claude Code uses it for testing)
+node_modules/
+package-lock.json
+
+# Backup files
+*.backup.html
+*.bak
+*~
+
+# Test artifacts
+/tmp/
+*.log
+
+# User-private data (do not commit measurement data)
+cpk-record-*.json
+*.xlsx
+*.xlsm
+*.xls
+!sample/*.xlsm   # except samples kept intentionally
+
+# OCR scratch
+*.png
+*.jpg
+*.jpeg
+!docs/**/*.png    # except docs screenshots
+!docs/**/*.jpg
