@@ -2214,7 +2214,10 @@ function stats(values) {
   const variance = v.reduce((acc, x) => acc + (x - mean) ** 2, 0) / (n - 1);
   return { n, mean, std: Math.sqrt(variance), max: Math.max(...v), min: Math.min(...v) };
 }
-function calc(d) {
+// k = sigma multiplier (default 3, standard ISO). Only the Capability View passes k=4;
+// the stats table (Section 04) and everything else use the standard 3σ.
+function calc(d, k) {
+  k = k || 3;
   const s = stats(d.data);
   const hasU = typeof d.upper === 'number' && !isNaN(d.upper);
   const hasL = typeof d.lower === 'number' && !isNaN(d.lower);
@@ -2223,9 +2226,7 @@ function calc(d) {
   if (s.n < 2 || s.std === null || s.std === 0) {
     return { ...s, T, Tc, Cp: null, CPU: null, CPL: null, Cpk: null };
   }
-  // Sigma multiplier is selectable (3 default, 4 = stricter). Cp uses 2k·σ, CPU/CPL use k·σ.
-  const k = state.ui.capSigma || 3;
-  // Cp needs BOTH limits (tolerance); one-sided gives only CPU or CPL.
+  // Cp uses 2k·σ, CPU/CPL use k·σ. Cp needs BOTH limits; one-sided gives only CPU or CPL.
   const Cp = (hasU && hasL) ? T / (2 * k * s.std) : null;
   const CPU = hasU ? (d.upper - s.mean) / (k * s.std) : null;
   const CPL = hasL ? (s.mean - d.lower) / (k * s.std) : null;
@@ -2486,14 +2487,13 @@ function renderStats() {
     grid.appendChild(h);
   });
 
-  const k = state.ui.capSigma || 3;   // sigma multiplier reflected in the formula labels
   const rows = [
     { key: 'n', label: 'n', formula: t('statN'), p: 0 },
     { key: 'mean', label: 'X̄', formula: t('statMean'), p: 3 },
     { key: 'std', label: 'σₙ₋₁', formula: t('statStd'), p: 3 },
-    { key: 'Cp', label: 'Cp', formula: `T / ${2 * k}σ`, p: 3 },
-    { key: 'CPU', label: 'CPU', formula: `(USL−X̄)/${k}σ`, p: 3 },
-    { key: 'CPL', label: 'CPL', formula: `(X̄−LSL)/${k}σ`, p: 3 },
+    { key: 'Cp', label: 'Cp', formula: t('statCp'), p: 3 },
+    { key: 'CPU', label: 'CPU', formula: t('statCPU'), p: 3 },
+    { key: 'CPL', label: 'CPL', formula: t('statCPL'), p: 3 },
     { key: 'Cpk', label: 'Cpk', formula: t('statCpkMin'), p: 3, highlight: true },
     { key: 'max', label: 'Max', formula: t('statMax'), p: 3 },
     { key: 'min', label: 'Min', formula: t('statMin'), p: 3 },
@@ -2711,9 +2711,9 @@ function drawCapChart() {
       : padTop + plotH * t;   // y position
   };
 
-  // Draw datasets
+  // Draw datasets — Capability View uses the selected sigma (k) for its Cpk label
   state.datasets.forEach((d, i) => {
-    const c = calc(d);
+    const c = calc(d, kSigma);
     const dpos = dsCoord(i);
 
     // Wrap each dataset's visuals in a draggable group
@@ -4044,7 +4044,7 @@ function setupToolbar() {
     if (e.target.tagName !== 'BUTTON') return;
     state.ui.capSigma = +e.target.dataset.sigma;
     capSigmaSeg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === e.target));
-    onStateChange();   // k changes calc → re-render stats + all charts
+    drawCapChart(); saveState();   // k affects only the Capability View now
   });
   const capSigmaToggle = document.getElementById('capSigmaToggle');
   if (capSigmaToggle) capSigmaToggle.onclick = () => {

@@ -12,7 +12,7 @@ All notable changes to this project. Format loosely based on [Keep a Changelog](
 - **Auto-save** (debounced) writes back to the linked file, plus an explicit **Save** button and a saved/unsaved status chip.
 
 ### Added — charts
-- **Capability View ±kσ option:** choose **3σ or 4σ**. Draws a ±kσ process-spread band alongside Min/X̄/Max, and the capability index uses the selected multiplier everywhere (Cp = T/2kσ, CPU = (USL−X̄)/kσ, CPL = (X̄−LSL)/kσ) so the stats table and chart labels stay consistent.
+- **Capability View ±kσ option:** choose **3σ or 4σ** (Capability View only). Draws a ±kσ process-spread band alongside Min/X̄/Max, and the chart's Cpk label uses the selected multiplier (CPU = (USL−X̄)/kσ, etc.). The Section 04 stats table stays on standard 3σ.
 - **Tidier chart toolbars:** primary controls stay inline; secondary controls (font, decimals, line width, slash, aspect, reset) collapse into a per-chart **⚙ settings popover** that does not cover the plot, so adjustments preview live.
 
 ### Fixed
