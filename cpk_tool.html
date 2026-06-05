@@ -96,7 +96,11 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
   letter-spacing: 0.05em;
 }
 .version-mark .ver {
-  color: var(--accent); font-weight: 600;
+  color: #fff; font-weight: 700;
+  background: var(--accent);
+  padding: 1px 7px; border-radius: 10px;
+  letter-spacing: 0.08em;
+  box-shadow: 0 1px 4px rgba(210,35,42,0.4);
 }
 .version-mark .author {
   color: rgba(255,255,255,0.55);
@@ -515,7 +519,27 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
+  position: relative;
 }
+/* Gear button + settings popover (declutters the toolbar) */
+.chart-gear.active { background: var(--ink) !important; color: #fff !important; border-color: var(--ink) !important; }
+.settings-pop {
+  position: absolute;
+  top: 100%; right: 12px;
+  z-index: 30;
+  margin-top: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  box-shadow: 0 12px 32px rgba(20,17,15,0.22);
+  padding: 12px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(540px, 92vw);
+}
+.settings-pop.open { display: flex; }
+.settings-pop .tool-group { border-right: none; height: auto; padding: 0; flex-wrap: wrap; }
 .chart-card-actions {
   display: flex;
   gap: 4px;
@@ -1018,7 +1042,7 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
     background-image: none;
     padding: 0;
   }
-  .topbar, .tab-bar-wrap, .modal-backdrop, .toast, .paste-hint, .chart-toolbar, .ds-style-row, .ds-controls, .section-actions { display: none !important; }
+  .topbar, .tab-bar-wrap, .modal-backdrop, .toast, .paste-hint, .chart-toolbar, .chart-card-actions, .settings-pop, .ds-style-row, .ds-controls, .section-actions { display: none !important; }
   .container { margin: 0; padding: 8mm; max-width: 100%; gap: 6mm; }
   .section, .chart-card { break-inside: avoid; box-shadow: none; }
   .charts-row { gap: 8mm; }
@@ -1203,6 +1227,10 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
       <div class="chart-card-header">
         <div class="chart-card-title" data-i18n="chartCapTitle">Capability View</div>
         <div class="chart-card-actions">
+          <button class="btn btn-sm chart-gear" data-gear="cap" title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span data-i18n="toolMore">Settings</span>
+          </button>
           <button class="btn btn-sm" data-export="cap" data-fmt="copy-png" title="Copy PNG to clipboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             <span data-i18n="toolCopyPng">Copy PNG</span>
@@ -1218,8 +1246,55 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
             <span data-i18n="toolSaveSvg">Save SVG</span>
           </button>
         </div>
+        <div class="settings-pop" data-pop="cap">
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolFont">Font</span>
+            <div class="tool-counter">
+              <button id="fontDec">−</button><span id="fontVal">11</span><button id="fontInc">+</button>
+            </div>
+          </div>
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolDecimals">Decimals</span>
+            <div class="tool-counter">
+              <button id="decDec">−</button><span id="decVal">3</span><button id="decInc">+</button>
+            </div>
+          </div>
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolLine">Line</span>
+            <div class="tool-counter">
+              <button id="capSpecDec">−</button><span id="capSpecVal">2</span><button id="capSpecInc">+</button>
+            </div>
+          </div>
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolSlash">Slash</span>
+            <span class="tool-label-sub" data-i18n="toolSlashLen">Length</span>
+            <div class="tool-counter">
+              <button id="slashLenDec">−</button><span id="slashLenVal">10</span><button id="slashLenInc">+</button>
+            </div>
+            <span class="tool-label-sub" data-i18n="toolSlashGap">Gap</span>
+            <div class="tool-counter">
+              <button id="slashGapDec">−</button><span id="slashGapVal">4</span><button id="slashGapInc">+</button>
+            </div>
+            <span class="tool-label-sub" data-i18n="toolSlashAngle">Angle</span>
+            <div class="tool-counter">
+              <button id="slashAngDec">−</button><span id="slashAngVal">30°</span><button id="slashAngInc">+</button>
+            </div>
+          </div>
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolAspect">Aspect</span>
+            <div class="seg" data-aspect-seg="cap">
+              <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
+              <button data-aspect="16:9">16:9</button>
+              <button data-aspect="4:3">4:3</button>
+              <button data-aspect="1:1">1:1</button>
+            </div>
+          </div>
+          <div class="tool-group">
+            <button class="btn btn-ghost btn-sm" id="resetSpacingBtn" data-i18n="toolResetSpacing">Reset Spacing</button>
+          </div>
+        </div>
       </div>
-      <!-- Chart toolbar -->
+      <!-- Chart toolbar (primary) -->
       <div class="chart-toolbar">
         <div class="tool-group">
           <span class="tool-label" data-i18n="toolOrient">Layout</span>
@@ -1229,67 +1304,18 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
           </div>
         </div>
         <div class="tool-group">
-          <span class="tool-label" data-i18n="toolFont">Font</span>
-          <div class="tool-counter">
-            <button id="fontDec">−</button>
-            <span id="fontVal">11</span>
-            <button id="fontInc">+</button>
-          </div>
-        </div>
-        <div class="tool-group">
-          <span class="tool-label" data-i18n="toolDecimals">Decimals</span>
-          <div class="tool-counter">
-            <button id="decDec">−</button>
-            <span id="decVal">3</span>
-            <button id="decInc">+</button>
-          </div>
-        </div>
-        <div class="tool-group">
           <span class="tool-label" data-i18n="toolShow">Show</span>
           <button class="tool-toggle active" data-show="max"><span class="check"></span><span data-i18n="toolMax">Max</span></button>
           <button class="tool-toggle active" data-show="avg"><span class="check"></span>X̄</button>
           <button class="tool-toggle active" data-show="min"><span class="check"></span><span data-i18n="toolMin">Min</span></button>
         </div>
         <div class="tool-group">
-          <span class="tool-label" data-i18n="toolLine">Line</span>
-          <div class="tool-counter">
-            <button id="capSpecDec">−</button>
-            <span id="capSpecVal">2</span>
-            <button id="capSpecInc">+</button>
+          <span class="tool-label" data-i18n="toolSigma">Sigma</span>
+          <div class="seg" id="capSigmaSeg">
+            <button data-sigma="3" class="active">3σ</button>
+            <button data-sigma="4">4σ</button>
           </div>
-        </div>
-        <div class="tool-group">
-          <span class="tool-label" data-i18n="toolSlash">Slash</span>
-          <span class="tool-label-sub" data-i18n="toolSlashLen">Length</span>
-          <div class="tool-counter">
-            <button id="slashLenDec">−</button>
-            <span id="slashLenVal">10</span>
-            <button id="slashLenInc">+</button>
-          </div>
-          <span class="tool-label-sub" data-i18n="toolSlashGap">Gap</span>
-          <div class="tool-counter">
-            <button id="slashGapDec">−</button>
-            <span id="slashGapVal">4</span>
-            <button id="slashGapInc">+</button>
-          </div>
-          <span class="tool-label-sub" data-i18n="toolSlashAngle">Angle</span>
-          <div class="tool-counter">
-            <button id="slashAngDec">−</button>
-            <span id="slashAngVal">30°</span>
-            <button id="slashAngInc">+</button>
-          </div>
-        </div>
-        <div class="tool-group">
-          <span class="tool-label" data-i18n="toolAspect">Aspect</span>
-          <div class="seg" data-aspect-seg="cap">
-            <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
-            <button data-aspect="16:9">16:9</button>
-            <button data-aspect="4:3">4:3</button>
-            <button data-aspect="1:1">1:1</button>
-          </div>
-        </div>
-        <div class="tool-group">
-          <button class="btn btn-ghost btn-sm" id="resetSpacingBtn" data-i18n="toolResetSpacing">Reset Spacing</button>
+          <button class="tool-toggle active" id="capSigmaToggle"><span class="check"></span><span data-i18n="toolBand">±kσ band</span></button>
         </div>
       </div>
       <!-- Per-dataset style row -->
@@ -1306,6 +1332,10 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
       <div class="chart-card-header">
         <div class="chart-card-title" data-i18n="chartBellTitle">Distribution View</div>
         <div class="chart-card-actions">
+          <button class="btn btn-sm chart-gear" data-gear="bell" title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span data-i18n="toolMore">Settings</span>
+          </button>
           <button class="btn btn-sm" data-export="bell" data-fmt="copy-png" title="Copy PNG to clipboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             <span data-i18n="toolCopyPng">Copy PNG</span>
@@ -1321,6 +1351,35 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
             <span data-i18n="toolSaveSvg">Save SVG</span>
           </button>
         </div>
+        <div class="settings-pop" data-pop="bell">
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolFont">Font</span>
+            <div class="tool-counter">
+              <button id="bellFontDec">−</button><span id="bellFontVal">11</span><button id="bellFontInc">+</button>
+            </div>
+          </div>
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolDecimals">Decimals</span>
+            <div class="tool-counter">
+              <button id="bellDecDec">−</button><span id="bellDecVal">3</span><button id="bellDecInc">+</button>
+            </div>
+          </div>
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolLine">Line</span>
+            <div class="tool-counter">
+              <button id="bellSpecDec">−</button><span id="bellSpecVal">2</span><button id="bellSpecInc">+</button>
+            </div>
+          </div>
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolAspect">Aspect</span>
+            <div class="seg" data-aspect-seg="bell">
+              <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
+              <button data-aspect="16:9">16:9</button>
+              <button data-aspect="4:3">4:3</button>
+              <button data-aspect="1:1">1:1</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="chart-toolbar">
         <div class="tool-group">
@@ -1331,44 +1390,11 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
           </div>
         </div>
         <div class="tool-group">
-          <span class="tool-label" data-i18n="toolFont">Font</span>
-          <div class="tool-counter">
-            <button id="bellFontDec">−</button>
-            <span id="bellFontVal">11</span>
-            <button id="bellFontInc">+</button>
-          </div>
-        </div>
-        <div class="tool-group">
-          <span class="tool-label" data-i18n="toolDecimals">Decimals</span>
-          <div class="tool-counter">
-            <button id="bellDecDec">−</button>
-            <span id="bellDecVal">3</span>
-            <button id="bellDecInc">+</button>
-          </div>
-        </div>
-        <div class="tool-group">
           <span class="tool-label" data-i18n="toolShow">Show</span>
           <button class="tool-toggle active" data-bell-show="mean"><span class="check"></span><span data-i18n="toolMean">Mean</span></button>
           <button class="tool-toggle active" data-bell-show="3sigma"><span class="check"></span><span data-i18n="tool3Sigma">±3σ</span></button>
           <button class="tool-toggle" data-bell-show="4sigma"><span class="check"></span><span data-i18n="tool4Sigma">±4σ</span></button>
           <button class="tool-toggle active" data-bell-show="spec"><span class="check"></span><span data-i18n="toolSpec">Spec</span></button>
-        </div>
-        <div class="tool-group">
-          <span class="tool-label" data-i18n="toolLine">Line</span>
-          <div class="tool-counter">
-            <button id="bellSpecDec">−</button>
-            <span id="bellSpecVal">2</span>
-            <button id="bellSpecInc">+</button>
-          </div>
-        </div>
-        <div class="tool-group">
-          <span class="tool-label" data-i18n="toolAspect">Aspect</span>
-          <div class="seg" data-aspect-seg="bell">
-            <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
-            <button data-aspect="16:9">16:9</button>
-            <button data-aspect="4:3">4:3</button>
-            <button data-aspect="1:1">1:1</button>
-          </div>
         </div>
       </div>
       <div class="chart-body">
@@ -1387,6 +1413,10 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
       <div class="chart-card-header">
         <div class="chart-card-title" data-i18n="chartRunTitle">Run Chart</div>
         <div class="chart-card-actions">
+          <button class="btn btn-sm chart-gear" data-gear="run" title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span data-i18n="toolMore">Settings</span>
+          </button>
           <button class="btn btn-sm" data-export="run" data-fmt="copy-png" title="Copy PNG to clipboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             <span data-i18n="toolCopyPng">Copy PNG</span>
@@ -1395,16 +1425,22 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
             <span data-i18n="toolSavePng">Save PNG</span>
           </button>
         </div>
+        <div class="settings-pop" data-pop="run">
+          <div class="tool-group">
+            <span class="tool-label" data-i18n="toolAspect">Aspect</span>
+            <div class="seg" data-aspect-seg="run">
+              <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
+              <button data-aspect="16:9">16:9</button>
+              <button data-aspect="4:3">4:3</button>
+              <button data-aspect="1:1">1:1</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="chart-toolbar">
         <div class="tool-group">
-          <span class="tool-label" data-i18n="toolAspect">Aspect</span>
-          <div class="seg" data-aspect-seg="run">
-            <button data-aspect="free" class="active" data-i18n="toolFree">Free</button>
-            <button data-aspect="16:9">16:9</button>
-            <button data-aspect="4:3">4:3</button>
-            <button data-aspect="1:1">1:1</button>
-          </div>
+          <span class="tool-label" data-i18n="toolShow">Show</span>
+          <button class="tool-toggle active" id="runSpecToggle"><span class="check"></span><span data-i18n="toolSpec">Spec</span></button>
         </div>
       </div>
       <div class="chart-body">
@@ -1511,7 +1547,7 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
 /* ============================================================
    APP META
    ============================================================ */
-const APP_VERSION = 'v1.0.0';
+const APP_VERSION = 'v2.0.0';
 const APP_AUTHOR  = 'Sittisak. C (PE)';
 const STORAGE_KEY = 'cpk-tool-state-v2';
 const MAX_DATASETS = 8;
@@ -1575,6 +1611,7 @@ const I18N = {
     chartBellTitle: 'Distribution View',
     chartBellMeta: 'normal distribution (PDF) — drag spec labels to reposition',
     toolMean: 'Mean', tool3Sigma: '±3σ', tool4Sigma: '±4σ', toolSpec: 'Spec', toolLine: 'Line',
+    toolMore: 'Settings', toolSigma: 'Sigma', toolBand: '±kσ band',
     toolSlash: 'Slash', toolSlashLen: 'Length', toolSlashGap: 'Gap', toolSlashAngle: 'Angle',
     rowSyncedFromFirst: '(synced from #1)',
     toastCopied: 'Image copied to clipboard',
@@ -1667,6 +1704,7 @@ const I18N = {
     chartBellTitle: 'กราฟการกระจายตัว',
     chartBellMeta: 'การแจกแจงปกติ (PDF) — ลาก label ขีดจำกัดเพื่อย้ายตำแหน่ง',
     toolMean: 'ค่าเฉลี่ย', tool3Sigma: '±3σ', tool4Sigma: '±4σ', toolSpec: 'ขีดจำกัด', toolLine: 'หนาเส้น',
+    toolMore: 'ตั้งค่า', toolSigma: 'ซิกม่า', toolBand: 'แถบ ±kσ',
     toolSlash: 'ขีดเฉียง', toolSlashLen: 'ยาว', toolSlashGap: 'ห่าง', toolSlashAngle: 'มุม',
     rowSyncedFromFirst: '(ใช้ค่าจากชุดแรก)',
     toastCopied: 'คัดลอกภาพไปคลิปบอร์ดแล้ว',
@@ -1759,6 +1797,7 @@ const I18N = {
     chartBellTitle: '分布ビュー',
     chartBellMeta: '正規分布 (PDF) — 規格ラベルをドラッグで再配置',
     toolMean: '平均', tool3Sigma: '±3σ', tool4Sigma: '±4σ', toolSpec: '規格', toolLine: '線幅',
+    toolMore: '設定', toolSigma: 'シグマ', toolBand: '±kσ 帯',
     toolSlash: '斜線', toolSlashLen: '長さ', toolSlashGap: '間隔', toolSlashAngle: '角度',
     rowSyncedFromFirst: '(#1から同期)',
     toastCopied: 'クリップボードにコピー',
@@ -1865,6 +1904,9 @@ const state = {
   ui: {
     lang: 'en',
     capOrient: 'vertical',     // 'vertical' or 'horizontal'
+    capSigma: 3,               // 3 or 4 — sigma multiplier for capability index + ±kσ band
+    capShowSigma: true,        // draw the ±kσ process-spread band in Capability View
+    runShowSpec: true,         // draw USL/LSL spec lines + out-of-spec shading in Run chart
     capFont: 11,               // 8..18
     capDecimals: 3,            // 0..4
     showMax: true, showAvg: true, showMin: true,
@@ -2181,10 +2223,12 @@ function calc(d) {
   if (s.n < 2 || s.std === null || s.std === 0) {
     return { ...s, T, Tc, Cp: null, CPU: null, CPL: null, Cpk: null };
   }
+  // Sigma multiplier is selectable (3 default, 4 = stricter). Cp uses 2k·σ, CPU/CPL use k·σ.
+  const k = state.ui.capSigma || 3;
   // Cp needs BOTH limits (tolerance); one-sided gives only CPU or CPL.
-  const Cp = (hasU && hasL) ? T / (6 * s.std) : null;
-  const CPU = hasU ? (d.upper - s.mean) / (3 * s.std) : null;
-  const CPL = hasL ? (s.mean - d.lower) / (3 * s.std) : null;
+  const Cp = (hasU && hasL) ? T / (2 * k * s.std) : null;
+  const CPU = hasU ? (d.upper - s.mean) / (k * s.std) : null;
+  const CPL = hasL ? (s.mean - d.lower) / (k * s.std) : null;
   let Cpk = null;
   if (CPU !== null && CPL !== null) Cpk = Math.min(CPU, CPL);
   else if (CPU !== null) Cpk = CPU;
@@ -2442,13 +2486,14 @@ function renderStats() {
     grid.appendChild(h);
   });
 
+  const k = state.ui.capSigma || 3;   // sigma multiplier reflected in the formula labels
   const rows = [
     { key: 'n', label: 'n', formula: t('statN'), p: 0 },
     { key: 'mean', label: 'X̄', formula: t('statMean'), p: 3 },
     { key: 'std', label: 'σₙ₋₁', formula: t('statStd'), p: 3 },
-    { key: 'Cp', label: 'Cp', formula: t('statCp'), p: 3 },
-    { key: 'CPU', label: 'CPU', formula: t('statCPU'), p: 3 },
-    { key: 'CPL', label: 'CPL', formula: t('statCPL'), p: 3 },
+    { key: 'Cp', label: 'Cp', formula: `T / ${2 * k}σ`, p: 3 },
+    { key: 'CPU', label: 'CPU', formula: `(USL−X̄)/${k}σ`, p: 3 },
+    { key: 'CPL', label: 'CPL', formula: `(X̄−LSL)/${k}σ`, p: 3 },
     { key: 'Cpk', label: 'Cpk', formula: t('statCpkMin'), p: 3, highlight: true },
     { key: 'max', label: 'Max', formula: t('statMax'), p: 3 },
     { key: 'min', label: 'Min', formula: t('statMin'), p: 3 },
@@ -2600,11 +2645,16 @@ function drawCapChart() {
   const plotH = H - padTop - padBot;
 
   // Compute data range
+  const kSigma = state.ui.capSigma || 3;
   const allVals = [];
   state.datasets.forEach(d => {
     if (!isNaN(d.upper)) allVals.push(d.upper);
     if (!isNaN(d.lower)) allVals.push(d.lower);
     d.data.forEach(v => { if (v !== null && !isNaN(v)) allVals.push(v); });
+    if (state.ui.capShowSigma) {
+      const cc = calc(d);
+      if (cc.mean !== null && cc.std) allVals.push(cc.mean + kSigma * cc.std, cc.mean - kSigma * cc.std);
+    }
   });
   if (allVals.length < 2) {
     svg.appendChild(svgEl('text', {
@@ -2694,6 +2744,40 @@ function drawCapChart() {
         x1: padL + 6, x2: padL + plotW - 6, y1: dpos, y2: dpos,
         stroke: '#E0DCD0', 'stroke-width': 1, 'stroke-dasharray': '2 4'
       }));
+    }
+
+    // ±kσ process-spread band (drawn behind the Min–Max bar)
+    if (state.ui.capShowSigma && c.mean !== null && c.std) {
+      const sHi = valToCoord(c.mean + kSigma * c.std);
+      const sLo = valToCoord(c.mean - kSigma * c.std);
+      const sigLbl = `±${kSigma}σ`;
+      if (isVertical) {
+        dsG.appendChild(svgEl('rect', {
+          x: dpos - 12, y: Math.min(sHi, sLo), width: 24, height: Math.abs(sLo - sHi),
+          fill: d.color, opacity: 0.10, stroke: 'none'
+        }));
+        [sHi, sLo].forEach(yy => dsG.appendChild(svgEl('line', {
+          x1: dpos - 12, x2: dpos + 12, y1: yy, y2: yy,
+          stroke: d.color, 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0.6
+        })));
+        dsG.appendChild(svgEl('text', {
+          x: dpos + 14, y: sHi - 3,
+          'font-family': 'IBM Plex Mono', 'font-size': fontSize - 3, fill: d.color, opacity: 0.85
+        }, sigLbl));
+      } else {
+        dsG.appendChild(svgEl('rect', {
+          x: Math.min(sHi, sLo), y: dpos - 12, width: Math.abs(sLo - sHi), height: 24,
+          fill: d.color, opacity: 0.10, stroke: 'none'
+        }));
+        [sHi, sLo].forEach(xx => dsG.appendChild(svgEl('line', {
+          x1: xx, x2: xx, y1: dpos - 12, y2: dpos + 12,
+          stroke: d.color, 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0.6
+        })));
+        dsG.appendChild(svgEl('text', {
+          x: sHi, y: dpos - 14, 'text-anchor': 'middle',
+          'font-family': 'IBM Plex Mono', 'font-size': fontSize - 3, fill: d.color, opacity: 0.85
+        }, sigLbl));
+      }
     }
 
     // Data range marker (Min — X̄ — Max)
@@ -3559,9 +3643,45 @@ function drawRunChart() {
 
   const labels = Array.from({ length: MAX_ROWS }, (_, i) => i + 1);
 
-  const datasets = [];
+  // USL/LSL are shared across datasets (sourced from ds[0])
+  const ds0 = state.datasets[0] || {};
+  const u = (typeof ds0.upper === 'number' && !isNaN(ds0.upper)) ? ds0.upper : null;
+  const l = (typeof ds0.lower === 'number' && !isNaN(ds0.lower)) ? ds0.lower : null;
+  const showSpec = state.ui.runShowSpec !== false;
+  const USL_COLOR = '#D2232A';   // accent red — distinct from data series
+  const LSL_COLOR = '#1D4ED8';   // blue
+
+  // Y-axis range with headroom so spec lines float inside the plot (not on the border)
+  const vals = [];
+  state.datasets.forEach(d => d.data.forEach(v => { if (v !== null && !isNaN(v)) vals.push(v); }));
+  if (showSpec) { if (u !== null) vals.push(u); if (l !== null) vals.push(l); }
+  let yMin, yMax;
+  if (vals.length) {
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = (hi - lo || Math.abs(hi) || 1) * 0.15;
+    yMin = lo - pad; yMax = hi + pad;
+  }
+
+  const shadeSets = [];   // out-of-spec shading (drawn behind)
+  const dataSets = [];    // measurement series
+  const lineSets = [];    // spec lines (drawn on top)
+
+  if (showSpec) {
+    if (u !== null) {
+      shadeSets.push({ label: 'USL zone', data: Array(MAX_ROWS).fill(u), borderWidth: 0,
+        pointRadius: 0, pointHoverRadius: 0, fill: 'end', backgroundColor: 'rgba(210,35,42,0.07)', tension: 0, order: 5 });
+      lineSets.push({ label: 'USL', data: Array(MAX_ROWS).fill(u), borderColor: USL_COLOR,
+        backgroundColor: 'transparent', borderWidth: 2, borderDash: [7, 4], pointRadius: 0, pointHoverRadius: 0, tension: 0, order: 0 });
+    }
+    if (l !== null) {
+      shadeSets.push({ label: 'LSL zone', data: Array(MAX_ROWS).fill(l), borderWidth: 0,
+        pointRadius: 0, pointHoverRadius: 0, fill: 'start', backgroundColor: 'rgba(210,35,42,0.07)', tension: 0, order: 5 });
+      lineSets.push({ label: 'LSL', data: Array(MAX_ROWS).fill(l), borderColor: LSL_COLOR,
+        backgroundColor: 'transparent', borderWidth: 2, borderDash: [7, 4], pointRadius: 0, pointHoverRadius: 0, tension: 0, order: 0 });
+    }
+  }
   state.datasets.forEach(d => {
-    datasets.push({
+    dataSets.push({
       label: d.name,
       data: d.data.map(v => v === null ? null : v),
       borderColor: d.color,
@@ -3573,42 +3693,39 @@ function drawRunChart() {
       pointRadius: 4,
       pointHoverRadius: 7,
       pointStyle: chartJsPointStyle(d.marker),
-      spanGaps: true
+      spanGaps: true,
+      order: 1
     });
-    // USL/LSL spec lines for this dataset
-    if (!isNaN(d.upper)) {
-      datasets.push({
-        label: d.name + ' USL',
-        data: Array(MAX_ROWS).fill(d.upper),
-        borderColor: d.color,
-        backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderDash: [6, 4],
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        tension: 0,
-        _hideLegend: true
-      });
-    }
-    if (!isNaN(d.lower)) {
-      datasets.push({
-        label: d.name + ' LSL',
-        data: Array(MAX_ROWS).fill(d.lower),
-        borderColor: d.color,
-        backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderDash: [6, 4],
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        tension: 0,
-        _hideLegend: true
-      });
-    }
   });
+  const datasets = [...shadeSets, ...dataSets, ...lineSets];
 
+  // Label the spec lines at the right edge (Chart.js has no built-in line label)
+  const specLabelPlugin = {
+    id: 'specLabels',
+    afterDatasetsDraw(chart) {
+      if (!showSpec) return;
+      const { ctx, chartArea, scales } = chart;
+      ctx.save();
+      ctx.font = '700 11px "IBM Plex Mono", monospace';
+      if (u !== null) {
+        const y = scales.y.getPixelForValue(u);
+        ctx.fillStyle = USL_COLOR; ctx.textBaseline = 'bottom';
+        ctx.fillText('USL ' + u, chartArea.left + 6, y - 3);
+      }
+      if (l !== null) {
+        const y = scales.y.getPixelForValue(l);
+        ctx.fillStyle = LSL_COLOR; ctx.textBaseline = 'top';
+        ctx.fillText('LSL ' + l, chartArea.left + 6, y + 3);
+      }
+      ctx.restore();
+    }
+  };
+
+  const isSpec = (s) => /^(USL|LSL)/.test(s);
   runChartObj = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
+    plugins: [specLabelPlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -3620,7 +3737,7 @@ function drawRunChart() {
             font: { family: 'IBM Plex Sans', size: 11 },
             usePointStyle: true,
             padding: 12,
-            filter: (item) => !/(USL|LSL)$/.test(item.text)
+            filter: (item) => !isSpec(item.text)
           }
         },
         tooltip: {
@@ -3633,7 +3750,7 @@ function drawRunChart() {
             title: (items) => 'sample № ' + items[0].label,
             label: (item) => `  ${item.dataset.label}: ${item.formattedValue}`
           },
-          filter: (item) => !/(USL|LSL)$/.test(item.dataset.label)
+          filter: (item) => !isSpec(item.dataset.label)
         }
       },
       scales: {
@@ -3643,6 +3760,7 @@ function drawRunChart() {
           ticks: { font: { family: 'IBM Plex Mono', size: 10 }, color: '#888376' }
         },
         y: {
+          min: yMin, max: yMax,
           title: { display: true, text: 'Measurement', font: { family: 'IBM Plex Sans', size: 10 }, color: '#888376' },
           grid: { color: '#F0EDE5', drawBorder: false },
           ticks: { font: { family: 'IBM Plex Mono', size: 10 }, color: '#888376' }
@@ -3920,6 +4038,51 @@ function setupToolbar() {
     document.getElementById('slashAngVal').textContent = state.ui.specSlashAngle + '°';
     refreshBoth();
   };
+  // Capability sigma multiplier (3σ / 4σ) — affects calc() everywhere (stats + chart labels + band)
+  const capSigmaSeg = document.getElementById('capSigmaSeg');
+  if (capSigmaSeg) capSigmaSeg.addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') return;
+    state.ui.capSigma = +e.target.dataset.sigma;
+    capSigmaSeg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === e.target));
+    onStateChange();   // k changes calc → re-render stats + all charts
+  });
+  const capSigmaToggle = document.getElementById('capSigmaToggle');
+  if (capSigmaToggle) capSigmaToggle.onclick = () => {
+    state.ui.capShowSigma = !state.ui.capShowSigma;
+    capSigmaToggle.classList.toggle('active', state.ui.capShowSigma);
+    drawCapChart(); saveState();
+  };
+  // Run chart spec lines toggle
+  const runSpecToggle = document.getElementById('runSpecToggle');
+  if (runSpecToggle) runSpecToggle.onclick = () => {
+    state.ui.runShowSpec = !state.ui.runShowSpec;
+    runSpecToggle.classList.toggle('active', state.ui.runShowSpec);
+    drawRunChart(); saveState();
+  };
+}
+
+/* ============================================================
+   CHART SETTINGS POPOVER (gear button per chart)
+   ============================================================ */
+function setupChartGear() {
+  document.querySelectorAll('.chart-gear').forEach(btn => {
+    const pop = document.querySelector(`.settings-pop[data-pop="${btn.dataset.gear}"]`);
+    if (!pop) return;
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const willOpen = !pop.classList.contains('open');
+      closeAllGears();
+      pop.classList.toggle('open', willOpen);
+      btn.classList.toggle('active', willOpen);
+    });
+    pop.addEventListener('click', e => e.stopPropagation());  // keep controls from closing it
+  });
+  document.addEventListener('click', closeAllGears);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllGears(); });
+}
+function closeAllGears() {
+  document.querySelectorAll('.settings-pop.open').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.chart-gear.active').forEach(b => b.classList.remove('active'));
 }
 
 /* ============================================================
@@ -4205,6 +4368,14 @@ function syncToolbarFromState() {
   document.querySelector('.tool-toggle[data-show="max"]').classList.toggle('active', state.ui.showMax);
   document.querySelector('.tool-toggle[data-show="avg"]').classList.toggle('active', state.ui.showAvg);
   document.querySelector('.tool-toggle[data-show="min"]').classList.toggle('active', state.ui.showMin);
+  // Sigma seg + band toggle (Capability)
+  document.querySelectorAll('#capSigmaSeg button').forEach(b => {
+    b.classList.toggle('active', +b.dataset.sigma === (state.ui.capSigma || 3));
+  });
+  document.getElementById('capSigmaToggle').classList.toggle('active', state.ui.capShowSigma !== false);
+  // Run spec toggle
+  const runSpecT = document.getElementById('runSpecToggle');
+  if (runSpecT) runSpecT.classList.toggle('active', state.ui.runShowSpec !== false);
   // Aspect segs
   document.querySelectorAll('[data-aspect-seg]').forEach(seg => {
     const which = seg.dataset.aspectSeg;
@@ -4469,6 +4640,7 @@ function boot() {
   setupResizeHandles();
   setupAspectPresets();
   setupChartExport();
+  setupChartGear();
   setupTabBar();
   setupFileActions();
   applyLang();          // localize the static UI (modals, topbar) before the picker

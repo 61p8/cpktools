@@ -2,17 +2,22 @@
 
 All notable changes to this project. Format loosely based on [Keep a Changelog](https://keepachangelog.com).
 
-## [Unreleased]
+## [v2.0.0] — 2026-06
 
 ### Changed — Excel-file backend (replaces browser cache)
-- Persistence moved from `localStorage` to a **local Excel file** via the File System Access API (**Chrome / Edge only**; other browsers are blocked with a notice).
+- Persistence moved from `localStorage` to a **local Excel file** via the File System Access API (**Chrome / Edge only**, served over http(s)/localhost; opening via `file://` is blocked with a notice).
 - On open, the app prompts to **link a `.xlsx`** — open an existing workbook or create a new template.
-- **Multi-tab workbook:** each sheet/tab is one Cpk group. Switch tabs via a tab bar or dropdown; add / rename / remove groups in-app.
+- **Multi-tab workbook:** each sheet/tab is one Cpk group. Switch via a horizontally-scrollable tab bar (drag/wheel to pan); add / rename / remove groups in-app.
 - **Hybrid format:** each group sheet is human-readable (FM8.3.2-PE-17 layout) plus a hidden `__CPK_STATE__` sheet storing full state (colors, markers, chart positions, UI prefs) for exact restore.
 - **Auto-save** (debounced) writes back to the linked file, plus an explicit **Save** button and a saved/unsaved status chip.
 
+### Added — charts
+- **Capability View ±kσ option:** choose **3σ or 4σ**. Draws a ±kσ process-spread band alongside Min/X̄/Max, and the capability index uses the selected multiplier everywhere (Cp = T/2kσ, CPU = (USL−X̄)/kσ, CPL = (X̄−LSL)/kσ) so the stats table and chart labels stay consistent.
+- **Tidier chart toolbars:** primary controls stay inline; secondary controls (font, decimals, line width, slash, aspect, reset) collapse into a per-chart **⚙ settings popover** that does not cover the plot, so adjustments preview live.
+
 ### Fixed
-- **One-sided spec capability:** with only USL (or only LSL), the tool no longer blanks all indices. `Cp` is shown only when both limits exist; **CPU** `(USL−X̄)/3σ` and **CPL** `(X̄−LSL)/3σ` are shown independently, and `Cpk` = the available one-sided index.
+- **One-sided spec capability:** with only USL (or only LSL), the tool no longer blanks all indices. `Cp` is shown only when both limits exist; **CPU** and **CPL** are shown independently, and `Cpk` = the available one-sided index.
+- **Run chart spec lines:** USL/LSL no longer sit on the chart border. The Y-axis now has headroom, USL/LSL are drawn as single shared lines in distinct colors (USL red, LSL blue) with labels, and the out-of-spec zones are lightly shaded.
 
 ## [v1.0.0] — 2026-06
 
