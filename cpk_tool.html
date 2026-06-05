@@ -972,16 +972,25 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
 /* ===== Group tab bar ===== */
 .tab-bar-wrap {
   max-width: 1280px; margin: 0 auto; padding: 10px 24px 0;
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: flex-end; gap: 6px;
 }
-.tab-bar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.tab-bar {
+  display: flex; align-items: flex-end; gap: 4px; flex: 1; min-width: 0;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: thin;
+  cursor: grab; -webkit-overflow-scrolling: touch; padding-bottom: 1px;
+}
+.tab-bar.dragging { cursor: grabbing; scroll-behavior: auto; }
+.tab-bar.dragging .tab { pointer-events: none; }
+.tab-bar::-webkit-scrollbar { height: 6px; }
+.tab-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.tab-bar::-webkit-scrollbar-track { background: transparent; }
 .tab {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
   padding: 6px 10px 6px 12px; border-radius: 8px 8px 0 0;
   background: rgba(255,255,255,0.05); border: 1px solid var(--border);
   border-bottom: none; cursor: pointer; font-size: 12px; font-weight: 500;
   color: var(--text-dim); transition: background 0.15s, color 0.15s;
-  max-width: 200px;
+  max-width: 200px; user-select: none;
 }
 .tab:hover { background: rgba(255,255,255,0.09); color: var(--text); }
 .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -992,16 +1001,11 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
 }
 .tab-close:hover { opacity: 1; background: rgba(0,0,0,0.18); }
 .tab-add {
+  flex: 0 0 auto; align-self: flex-end;
   border: 1px dashed var(--border); background: transparent; color: var(--text-dim);
   cursor: pointer; font-size: 16px; line-height: 1; padding: 5px 10px; border-radius: 8px;
 }
 .tab-add:hover { color: var(--accent); border-color: var(--accent); }
-.group-select {
-  margin-left: auto; background: var(--panel, #1a1a1a); color: var(--text);
-  border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px;
-  font-size: 12px; font-family: inherit;
-}
-@media (max-width: 600px) { .group-select { display: none; } }
 
 /* ===== Link-file modal actions ===== */
 .link-actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
@@ -1091,7 +1095,7 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
 <!-- Group tab bar (each tab = one Cpk record / Excel sheet) -->
 <div class="tab-bar-wrap">
   <div class="tab-bar" id="tabBar"></div>
-  <select class="group-select" id="groupSelect" aria-label="Select group"></select>
+  <button class="tab-add" id="tabAddBtn" title="Add group">+</button>
 </div>
 
 <div class="container">
@@ -4338,45 +4342,31 @@ document.getElementById('addDsBtn').onclick = addDataset;
    ============================================================ */
 function renderTabBar() {
   const bar = document.getElementById('tabBar');
-  const sel = document.getElementById('groupSelect');
-  if (bar) {
-    bar.innerHTML = '';
-    state.groups.forEach((g, i) => {
-      const tab = document.createElement('div');
-      tab.className = 'tab' + (i === state.activeGroup ? ' active' : '');
-      const label = document.createElement('span');
-      label.className = 'tab-label';
-      label.textContent = g.name;
-      label.title = g.name;
-      label.ondblclick = () => startRenameTab(i);
-      tab.appendChild(label);
-      if (state.groups.length > 1) {
-        const x = document.createElement('button');
-        x.className = 'tab-close';
-        x.innerHTML = '×';
-        x.title = t('tabRemove');
-        x.onclick = e => { e.stopPropagation(); removeGroup(i); };
-        tab.appendChild(x);
-      }
-      tab.onclick = () => { if (i !== state.activeGroup) setActiveGroup(i); };
-      bar.appendChild(tab);
-    });
-    const add = document.createElement('button');
-    add.className = 'tab-add';
-    add.textContent = '+';
-    add.title = t('tabAdd');
-    add.onclick = addGroup;
-    bar.appendChild(add);
-  }
-  if (sel) {
-    sel.innerHTML = '';
-    state.groups.forEach((g, i) => {
-      const o = document.createElement('option');
-      o.value = i; o.textContent = g.name;
-      if (i === state.activeGroup) o.selected = true;
-      sel.appendChild(o);
-    });
-  }
+  if (!bar) return;
+  bar.innerHTML = '';
+  state.groups.forEach((g, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (i === state.activeGroup ? ' active' : '');
+    const label = document.createElement('span');
+    label.className = 'tab-label';
+    label.textContent = g.name;
+    label.title = g.name;
+    label.ondblclick = () => startRenameTab(i);
+    tab.appendChild(label);
+    if (state.groups.length > 1) {
+      const x = document.createElement('button');
+      x.className = 'tab-close';
+      x.innerHTML = '×';
+      x.title = t('tabRemove');
+      x.onclick = e => { e.stopPropagation(); removeGroup(i); };
+      tab.appendChild(x);
+    }
+    tab.onclick = () => { if (i !== state.activeGroup) setActiveGroup(i); };
+    bar.appendChild(tab);
+  });
+  // keep the active tab in view when switching
+  const activeEl = bar.children[state.activeGroup];
+  if (activeEl && activeEl.scrollIntoView) activeEl.scrollIntoView({ inline: 'nearest', block: 'nearest' });
 }
 function startRenameTab(i) {
   const name = prompt(t('tabRenamePrompt'), state.groups[i].name);
@@ -4402,8 +4392,27 @@ function removeGroup(i) {
   saveState();
 }
 function setupTabBar() {
-  const sel = document.getElementById('groupSelect');
-  if (sel) sel.onchange = e => setActiveGroup(+e.target.value);
+  const add = document.getElementById('tabAddBtn');
+  if (add) { add.onclick = addGroup; add.title = t('tabAdd'); }
+  const bar = document.getElementById('tabBar');
+  if (!bar) return;
+  // Click-drag to pan the tab strip horizontally (Excel-like); wheel scrolls too
+  let down = false, startX = 0, startScroll = 0, moved = false;
+  bar.addEventListener('pointerdown', e => {
+    down = true; moved = false; startX = e.clientX; startScroll = bar.scrollLeft;
+  });
+  bar.addEventListener('pointermove', e => {
+    if (!down) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 4) { moved = true; bar.classList.add('dragging'); }
+    bar.scrollLeft = startScroll - dx;
+  });
+  const end = () => { down = false; setTimeout(() => bar.classList.remove('dragging'), 0); };
+  bar.addEventListener('pointerup', end);
+  bar.addEventListener('pointerleave', end);
+  // swallow the click that ends a drag so it doesn't switch tabs
+  bar.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); } }, true);
+  bar.addEventListener('wheel', e => { if (e.deltaY) { bar.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
 }
 function setupFileActions() {
   const save = document.getElementById('saveFileBtn');
