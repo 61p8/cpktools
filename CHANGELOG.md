@@ -2,6 +2,16 @@
 
 All notable changes to this project. Format loosely based on [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Added — charts
+- **Distribution View styling parity:** the per-dataset **color + marker chips** now appear above the Distribution View too (shared with Capability — editing either row updates both), and each bell curve now draws its dataset **marker at the peak**.
+- **Capability View auto-compact:** once you drag datasets closer together (custom spacing), the chart automatically crops the empty band along the cross axis on screen and in copies. The value axis keeps its length; the value ruler, USL/LSL lines, and legend ride up next to the clustered datasets. **Reset Spacing** restores the full chart.
+
+### Changed — export buttons
+- Copy buttons are relabelled by destination: **Copy Excel** (copies a PNG image) and **Copy Powerpoint** (copies vector SVG for Capability/Distribution; PNG for the canvas-based Run Chart). Behaviour is unchanged — they copy to the clipboard for pasting.
+- Removed the separate **Save PNG / Save SVG** buttons from all three charts.
+
 ## [v2.0.0] — 2026-06
 
 ### Changed — Excel-file backend (replaces browser cache)
