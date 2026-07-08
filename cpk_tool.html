@@ -9,9 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" integrity="sha512-SIMGYRUjwY8+gKg7nn9EItdD8LCADSDfJNutF9TPrvEo86sQmFMh6MyralfIyhADlajSxqc7G0gs7+MwWF/ogQ==" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" integrity="sha512-mpQLT7yiRJ06RkhNTYhVnvvr3c71il3h+wEI16ICc+fnFHxrBRoJrMmDJ8iBY04+U/FgTj7xah5Vbltq5pg+aQ==" crossorigin="anonymous"></script>
 
 <style>
 :root {
@@ -1408,7 +1408,7 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
 /* ============================================================
    APP META
    ============================================================ */
-const APP_VERSION = 'v1.0.0';
+const APP_VERSION = 'v1.0.1';
 const APP_AUTHOR  = 'Sittisak. C (PE)';
 const STORAGE_KEY = 'cpk-tool-state-v2';
 const MAX_DATASETS = 8;
@@ -1775,8 +1775,8 @@ function stats(values) {
 }
 function calc(d) {
   const s = stats(d.data);
-  const T = (isNaN(d.upper) || isNaN(d.lower)) ? null : d.upper - d.lower;
-  const Tc = (isNaN(d.upper) || isNaN(d.lower)) ? null : (d.upper + d.lower) / 2;
+  const T = (!isNum(d.upper) || !isNum(d.lower)) ? null : d.upper - d.lower;
+  const Tc = (!isNum(d.upper) || !isNum(d.lower)) ? null : (d.upper + d.lower) / 2;
   if (s.n < 2 || s.std === null || s.std === 0 || T === null) {
     return { ...s, T, Tc, Cp: null, CpkU: null, CpkL: null, Cpk: null };
   }
@@ -1786,6 +1786,9 @@ function calc(d) {
   return { ...s, T, Tc, Cp, CpkU, CpkL, Cpk: Math.min(CpkU, CpkL) };
 }
 const fmt = (v, p = 3) => (v === null || v === undefined || isNaN(v)) ? '—' : v.toFixed(p);
+// Strict numeric check — null/undefined/NaN/strings all fail.
+// (isNaN(null) === false, so a bare isNaN() check treats null as 0 — real bug after JSON round-trip.)
+const isNum = v => typeof v === 'number' && !isNaN(v);
 function cpkBadge(v) {
   if (v === null || isNaN(v)) return '';
   if (v >= 1.67) return ` <span class="badge badge-good">${t('badgeExcellent')}</span>`;
@@ -1846,7 +1849,7 @@ function renderDsTable() {
         tbody += `<td class="computed mono" data-computed="${r.fld}" data-ds="${i}">${fmt(c[r.fld])}</td>`;
       } else if (r.type === 'number') {
         const locked = r.shared && i > 0;
-        const val = d[r.fld] ?? '';
+        const val = isNum(d[r.fld]) ? d[r.fld] : '';
         const cls = locked ? ' class="synced-locked"' : '';
         const dis = locked ? ' disabled' : '';
         tbody += `<td><input type="number" step="any" data-ds="${i}" data-fld="${r.fld}" value="${val}"${cls}${dis}></td>`;
@@ -1869,7 +1872,10 @@ function renderDsTable() {
       const f = e.target.dataset.fld;
       let v = e.target.value;
       if (e.target.type === 'number') {
-        v = v === '' ? NaN : parseFloat(v);
+        // Store null (not NaN) for empty/invalid — NaN turns into null after a
+        // JSON round-trip anyway, and isNum() treats both as "no value".
+        const p = parseFloat(v);
+        v = isNaN(p) ? null : p;
       }
       state.datasets[i][f] = v;
       // If the changed field is upper/lower (only allowed on ds 0), sync to all datasets
@@ -1877,7 +1883,7 @@ function renderDsTable() {
         state.datasets.forEach((d, k) => { if (k > 0) d[f] = v; });
         // Update mirrored locked inputs visually
         table.querySelectorAll(`input[data-fld="${f}"].synced-locked`).forEach(mi => {
-          mi.value = (isNaN(v) || v === '') ? '' : v;
+          mi.value = isNum(v) ? v : '';
         });
         // Update computed T/Tc on all rows
         state.datasets.forEach((_, k) => {
@@ -2196,8 +2202,8 @@ function drawCapChart() {
   // Compute data range
   const allVals = [];
   state.datasets.forEach(d => {
-    if (!isNaN(d.upper)) allVals.push(d.upper);
-    if (!isNaN(d.lower)) allVals.push(d.lower);
+    if (isNum(d.upper)) allVals.push(d.upper);
+    if (isNum(d.lower)) allVals.push(d.lower);
     d.data.forEach(v => { if (v !== null && !isNaN(v)) allVals.push(v); });
   });
   if (allVals.length < 2) {
@@ -2249,10 +2255,10 @@ function drawCapChart() {
   // Dataset positions along the cross axis
   const spacing = getSpacing();
   const dsCoord = (i) => {
-    const t = spacing[i];
+    const frac = spacing[i];  // 'frac' — do not name this 't', it shadows the i18n helper
     return isVertical
-      ? padL + plotW * t      // x position
-      : padTop + plotH * t;   // y position
+      ? padL + plotW * frac   // x position
+      : padTop + plotH * frac; // y position
   };
 
   // Draw datasets
@@ -2429,10 +2435,10 @@ function drawCapChart() {
   // ===== Global USL/LSL spec lines (single line, drawn once, label drag-able) =====
   const ds0 = state.datasets[0];
   const geom = { isVertical, plotL: padL, plotT: padTop, plotW, plotH, valToCoord };
-  if (ds0 && !isNaN(ds0.upper)) {
+  if (ds0 && isNum(ds0.upper)) {
     drawGlobalSpec(svg, geom, ds0.upper, 'USL', true, fontSize, decimals, state.ui.uslLabelFrac);
   }
-  if (ds0 && !isNaN(ds0.lower)) {
+  if (ds0 && isNum(ds0.lower)) {
     drawGlobalSpec(svg, geom, ds0.lower, 'LSL', false, fontSize, decimals, state.ui.lslLabelFrac);
   }
 
@@ -2728,8 +2734,8 @@ function drawBellChart() {
     measVals.push(c.mean - sigmaPad * c.std);
     measVals.push(c.mean + sigmaPad * c.std);
   });
-  if (ds0 && !isNaN(ds0.upper)) measVals.push(ds0.upper);
-  if (ds0 && !isNaN(ds0.lower)) measVals.push(ds0.lower);
+  if (ds0 && isNum(ds0.upper)) measVals.push(ds0.upper);
+  if (ds0 && isNum(ds0.lower)) measVals.push(ds0.lower);
   // Also include actual data extremes for context
   state.datasets.forEach(d => d.data.forEach(v => { if (v !== null && !isNaN(v)) measVals.push(v); }));
 
@@ -2936,10 +2942,10 @@ function drawBellChart() {
   // USL / LSL global spec lines
   if (state.ui.bellShowSpec && ds0) {
     const geom = { isVertical, plotL: padL, plotT: padTop, plotW, plotH, valToCoord: measToCoord };
-    if (!isNaN(ds0.upper)) {
+    if (isNum(ds0.upper)) {
       drawBellSpec(svg, geom, ds0.upper, 'USL', true, fontSize, decimals, state.ui.bellUslLabelFrac);
     }
-    if (!isNaN(ds0.lower)) {
+    if (isNum(ds0.lower)) {
       drawBellSpec(svg, geom, ds0.lower, 'LSL', false, fontSize, decimals, state.ui.bellLslLabelFrac);
     }
   }
@@ -3170,7 +3176,7 @@ function drawRunChart() {
       spanGaps: true
     });
     // USL/LSL spec lines for this dataset
-    if (!isNaN(d.upper)) {
+    if (isNum(d.upper)) {
       datasets.push({
         label: d.name + ' USL',
         data: Array(MAX_ROWS).fill(d.upper),
@@ -3184,7 +3190,7 @@ function drawRunChart() {
         _hideLegend: true
       });
     }
-    if (!isNaN(d.lower)) {
+    if (isNum(d.lower)) {
       datasets.push({
         label: d.name + ' LSL',
         data: Array(MAX_ROWS).fill(d.lower),
@@ -3214,7 +3220,9 @@ function drawRunChart() {
             font: { family: 'IBM Plex Sans', size: 11 },
             usePointStyle: true,
             padding: 12,
-            filter: (item) => !/(USL|LSL)$/.test(item.text)
+            // Hide spec-line entries via their flag — a name-based regex would also
+            // hide any dataset the user happened to name ending in "USL"/"LSL"
+            filter: (item, data) => !data.datasets[item.datasetIndex]._hideLegend
           }
         },
         tooltip: {
@@ -3227,7 +3235,7 @@ function drawRunChart() {
             title: (items) => 'sample № ' + items[0].label,
             label: (item) => `  ${item.dataset.label}: ${item.formattedValue}`
           },
-          filter: (item) => !/(USL|LSL)$/.test(item.dataset.label)
+          filter: (item) => !item.dataset._hideLegend
         }
       },
       scales: {

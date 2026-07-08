@@ -3,7 +3,7 @@
 > เครื่องมือบันทึกค่าความสามารถของกระบวนการ (Cpk) แบบเว็บแอป — ทดแทนฟอร์ม Excel `FM8.3.2-PE-17`
 
 **Author:** Sittisak C. (PE Engineer, DENSO Thailand)
-**Version:** v1.0.0
+**Version:** v1.0.1
 **Type:** Single-file HTML app · No build tools required
 
 ---

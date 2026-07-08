@@ -2,6 +2,19 @@
 
 All notable changes to this project. Format loosely based on [Keep a Changelog](https://keepachangelog.com).
 
+## [v1.0.1] — 2026-07
+
+Repo review fixes. No feature changes.
+
+### Fixed
+- `.gitignore` was committed under the wrong filename (`download`) and never took effect — renamed back so backups, Excel files, and measurement JSON stay out of the repo
+- Cleared USL/LSL became `0` after a page reload (NaN → null through the localStorage JSON round-trip slipped past `isNaN()`), silently producing wrong T/Cp/Cpk — spec limits are now checked with a strict numeric guard (`isNum`) everywhere, and empty inputs are stored as `null`
+- Run Chart legend/tooltip hid any dataset whose *name* ended in "USL"/"LSL" (regex filter) — now filtered by the internal spec-line flag instead
+
+### Security
+- Added SRI `integrity` + `crossorigin` attributes to all three CDN scripts (SheetJS, Chart.js, Tesseract.js)
+- Pinned Tesseract.js to exact version 5.1.1 (was floating `@5`, which would break SRI on upstream release)
+
 ## [v1.0.0] — 2026-06
 
 Initial release. Single-file HTML app, ~4000 lines, ~150 KB.
