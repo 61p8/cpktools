@@ -1034,6 +1034,18 @@ body[data-lang="ja"] { font-family: 'Noto Sans JP', 'IBM Plex Sans', system-ui, 
 /* ===== Link-file modal actions ===== */
 .link-actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
 .link-actions .btn { flex: 1; justify-content: center; padding: 12px; }
+/* The link modal sits on a light surface — the default .btn (white text, near-transparent
+   bg) is designed for the dark topbar and would be invisible here. Give the non-primary
+   "Open .xlsx" button dark-on-light styling so both choices are visible. */
+.link-actions .btn:not(.btn-primary) {
+  background: var(--surface-3);
+  color: var(--ink);
+  border-color: var(--border);
+}
+.link-actions .btn:not(.btn-primary):hover {
+  background: var(--border);
+  border-color: var(--border);
+}
 
 /* ===== Print ===== */
 @media print {
